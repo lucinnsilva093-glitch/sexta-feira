@@ -85,3 +85,4 @@ def chat():
 if __name__ == "__main__":
     print("🤖 Sexta-Feira online...")
     app.run(debug=True)
+print("CHAVE:", API_KEY)
