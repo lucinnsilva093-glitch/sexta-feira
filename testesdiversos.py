@@ -5,7 +5,7 @@ import os
 
 # ================== CONFIG ==================
 API_KEY = os.getenv("API_KEY")
-
+print("API_KEY =", API_KEY)
 # ================== APP ==================
 app = Flask(__name__)
 CORS(app)
