@@ -38,8 +38,8 @@ def perguntar_ia(msg):
         return data["choices"][0]["message"]["content"]
 
     except Exception as e:
-        print("ERRO IA:", e)
-        return "Deu erro ao pensar 😅"
+     print("ERRO:", e)
+     return jsonify({"response": str(e)})
 
 # ================== ROTA ==================
 @app.route("/chat", methods=["POST"])
