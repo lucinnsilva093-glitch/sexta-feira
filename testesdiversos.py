@@ -1,53 +1,29 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
-import threading
 import os
+
+# ================== CONFIG ==================
 API_KEY = os.getenv("API_KEY")
 
 # ================== APP ==================
 app = Flask(__name__)
 CORS(app)
 
-# ================== IA ==================
-def perguntar_ia(msg):
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "openrouter/auto",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "Você é Sexta-Feira, uma assistente virtual feminina, simpática e inteligente. Sempre responda em português do Brasil."
-                    },
-                    {
-                        "role": "user",
-                        "content": msg
-                    }
-                ]
-            }
-        )
-
-        data = response.json()
-
-        return data["choices"][0]["message"]["content"]
-
-    except Exception as e:
-     print("ERRO:", e)
-     return jsonify({"response": str(e)})
-
 # ================== ROTA ==================
+@app.route("/")
+def home():
+    return "🤖 Sexta-Feira online"
+
+# ================== CHAT ==================
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
+        # pega mensagem enviada pelo site
         data = request.get_json()
         mensagem = data["message"]
 
+        # envia para OpenRouter
         resposta = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -55,34 +31,46 @@ def chat():
                 "Content-Type": "application/json"
             },
             json={
-                "model": "openai/gpt-3.5-turbo",
+                "model": "meta-llama/llama-3-8b-instruct",
                 "messages": [
-                    {"role": "user", "content": mensagem}
+                    {
+                        "role": "system",
+                        "content": (
+                            "Você é Sexta-Feira, uma assistente virtual feminina, "
+                            "inteligente, simpática e futurista. "
+                            "Sempre responda em português do Brasil."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": mensagem
+                    }
                 ]
             }
         )
 
+        # transforma resposta em json
         resposta_json = resposta.json()
 
+        # mostra logs no Render
         print(resposta_json)
 
+        # pega texto da IA
         texto = resposta_json["choices"][0]["message"]["content"]
 
+        # envia pro site
         return jsonify({
             "response": texto
         })
 
     except Exception as e:
         print("ERRO:", e)
+
         return jsonify({
             "response": str(e)
         })
-    # 🔊 fala sem travar
-
-    return jsonify({"response": resposta})
 
 # ================== RUN ==================
 if __name__ == "__main__":
     print("🤖 Sexta-Feira online...")
     app.run(debug=True)
-print("CHAVE:", API_KEY)
