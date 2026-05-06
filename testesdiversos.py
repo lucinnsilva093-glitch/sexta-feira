@@ -4,7 +4,7 @@ import requests
 import os
 
 # ================== CONFIG ==================
-API_KEY = os.getenv("API_KEY")
+API_KEY = "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"
 print("API_KEY =", repr(API_KEY))
 # ================== APP ==================
 app = Flask(__name__)
