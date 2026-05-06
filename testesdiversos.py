@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
-import pyttsx3
 import threading
 import os
 API_KEY = os.getenv("API_KEY")
@@ -9,37 +8,6 @@ API_KEY = os.getenv("API_KEY")
 # ================== APP ==================
 app = Flask(__name__)
 CORS(app)
-
-
-# ================== VOZ ==================
-engine = pyttsx3.init()
-
-voices = engine.getProperty('voices')
-
-# 🔥 tenta voz feminina (pode mudar índice se precisar)
-engine.setProperty('voice', "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_PT-BR_MARIA_11.0")
-
-engine.setProperty('rate', 180)  # velocidade da fala
-import pyttsx3
-import threading
-
-def falar(texto):
-    try:
-        engine = pyttsx3.init()  # 🔥 cria novo engine toda vez
-
-        voices = engine.getProperty('voices')
-        engine.setProperty('voice', "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_PT-BR_MARIA_11.0")  # ajusta se quiser
-        engine.setProperty('rate', 180)
-
-        engine.say(texto)
-        engine.runAndWait()
-        engine.stop()
-
-    except Exception as e:
-        print("Erro voz:", e)
-
-def falar_async(texto):
-    threading.Thread(target=falar, args=(texto,), daemon=True).start()
 
 # ================== IA ==================
 def perguntar_ia(msg):
@@ -82,7 +50,6 @@ def chat():
     resposta = perguntar_ia(msg)
 
     # 🔊 fala sem travar
-    falar_async(resposta)
 
     return jsonify({"response": resposta})
 
