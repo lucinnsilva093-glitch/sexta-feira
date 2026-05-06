@@ -13,7 +13,7 @@ CORS(app)
 # ================== ROTA ==================
 @app.route("/")
 def home():
-    return "🤖 Sexta-Feira online"
+    return "🔥 TESTE NOVO 123 🔥"
 
 # ================== CHAT ==================
 @app.route("/chat", methods=["POST"])
