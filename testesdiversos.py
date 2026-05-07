@@ -4,34 +4,81 @@ import requests
 import os
 
 # ================== CONFIG ==================
+
 API_KEY = os.environ["API_KEY"]
 
 print("CHAVE =", repr(API_KEY))
 
 # ================== APP ==================
+
 app = Flask(__name__)
 CORS(app)
 
 # ================== HOME ==================
+
 @app.route("/")
 def home():
     return "🤖 Sexta-Feira online"
 
+# ================== ESCOLHA DE IA ==================
+
+def escolher_modelo(mensagem):
+
+    mensagem = mensagem.lower()
+
+    palavras_complexas = [
+        "código",
+        "programação",
+        "python",
+        "resolver",
+        "equação",
+        "matemática",
+        "hack",
+        "script",
+        "explique",
+        "ciência",
+        "física",
+        "química",
+        "filosofia",
+        "detalhado",
+        "complexo",
+        "difícil",
+        "crie",
+        "desenvolva"
+    ]
+
+    for palavra in palavras_complexas:
+
+        if palavra in mensagem:
+
+            # IA mais inteligente
+            return "qwen/qwen-2.5-72b-instruct:free"
+
+    # IA mais natural/conversa
+    return "meta-llama/llama-3.3-70b-instruct:free"
+
 # ================== CHAT ==================
+
 @app.route("/chat", methods=["POST"])
 def chat():
+
     try:
 
-        # recebe mensagem do frontend
         data = request.get_json()
 
         mensagem = data["message"]
 
-        # envia para OpenRouter
+        # escolhe IA automaticamente
+        modelo = escolher_modelo(mensagem)
+
+        print("MODELO USADO:", modelo)
+
         resposta = requests.post(
+
             "https://openrouter.ai/api/v1/chat/completions",
 
             headers={
+
                 "Authorization": f"Bearer {API_KEY.strip()}",
                 "HTTP-Referer": "https://sextafeira-lc.netlify.app",
                 "X-Title": "Sexta-Feira",
@@ -39,15 +86,19 @@ def chat():
             },
 
             json={
-                "model": "meta-llama/llama-3-8b-instruct",
+
+                "model": modelo,
 
                 "messages": [
+
                     {
                         "role": "system",
+
                         "content": (
                             "Você é Sexta-Feira, "
                             "uma assistente virtual feminina, "
-                            "simpática, inteligente e futurista. "
+                            "futurista, elegante, inteligente e natural. "
+                            "Você conversa como uma IA avançada de filme futurista. "
                             "Sempre responda em português do Brasil."
                         )
                     },
@@ -60,18 +111,17 @@ def chat():
             }
         )
 
-        # transforma em json
         resposta_json = resposta.json()
 
-        # mostra nos logs
         print(resposta_json)
 
         # pega resposta da IA
         texto = resposta_json["choices"][0]["message"]["content"]
 
-        # envia pro frontend
         return jsonify({
-            "response": texto
+
+            "response": texto,
+            "model": modelo
         })
 
     except Exception as e:
@@ -79,10 +129,14 @@ def chat():
         print("ERRO:", e)
 
         return jsonify({
+
             "response": str(e)
         })
 
 # ================== RUN ==================
+
 if __name__ == "__main__":
+
     print("🤖 Sexta-Feira iniciando...")
+
     app.run(debug=True)
