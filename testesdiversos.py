@@ -58,7 +58,6 @@ def escolher_modelo(mensagem):
     return "meta-llama/llama-3.3-70b-instruct:free"
 
 # ================== CHAT ==================
-
 @app.route("/chat", methods=["POST"])
 def chat():
 
@@ -68,71 +67,107 @@ def chat():
 
         mensagem = data["message"]
 
-        # escolhe IA automaticamente
-        modelo = escolher_modelo(mensagem)
+        modelos = [
 
-        print("MODELO USADO:", modelo)
+            "meta-llama/llama-3.3-70b-instruct:free",
 
-        resposta = requests.post(
+            "qwen/qwen-2.5-72b-instruct:free",
 
-            "https://openrouter.ai/api/v1/chat/completions",
+            "deepseek/deepseek-r1:free",
 
-            headers={
+            "meta-llama/llama-3-8b-instruct"
+        ]
 
-                "Authorization": f"Bearer {API_KEY.strip()}",
-                "HTTP-Referer": "https://sextafeira-lc.netlify.app",
-                "X-Title": "Sexta-Feira",
-                "Content-Type": "application/json"
-            },
+        resposta_texto = None
+        modelo_usado = None
 
-            json={
+        for modelo in modelos:
 
-                "model": modelo,
+            try:
 
-                "messages": [
+                print("Tentando modelo:", modelo)
 
-                    {
-                        "role": "system",
+                resposta = requests.post(
 
-                        "content": (
-                            "Você é Sexta-Feira, "
-                            "uma assistente virtual feminina, "
-                            "futurista, elegante, inteligente e natural. "
-                            "Você conversa como uma IA avançada de filme futurista. "
-                            "Sempre responda em português do Brasil."
-                        )
+                    "https://openrouter.ai/api/v1/chat/completions",
+
+                    headers={
+
+                        "Authorization": f"Bearer {API_KEY.strip()}",
+                        "HTTP-Referer": "https://sextafeira-lc.netlify.app",
+                        "X-Title": "Sexta-Feira",
+                        "Content-Type": "application/json"
                     },
 
-                    {
-                        "role": "user",
-                        "content": mensagem
+                    json={
+
+                        "model": modelo,
+
+                        "messages": [
+
+                            {
+                                "role": "system",
+
+                                "content": (
+                                    "Você é Sexta-Feira, "
+                                    "uma assistente virtual feminina, "
+                                    "futurista, elegante e inteligente. "
+                                    "Sempre responda em português do Brasil."
+                                )
+                            },
+
+                            {
+                                "role": "user",
+                                "content": mensagem
+                            }
+                        ]
                     }
-                ]
-            }
-        )
+                )
 
-        resposta_json = resposta.json()
+                resposta_json = resposta.json()
 
-        print(resposta_json)
+                print(resposta_json)
 
-        # pega resposta da IA
-        texto = resposta_json["choices"][0]["message"]["content"]
+                if "choices" in resposta_json:
 
-        return jsonify({
+                    resposta_texto = (
+                        resposta_json["choices"][0]
+                        ["message"]["content"]
+                    )
 
-            "response": texto,
-            "model": modelo
-        })
+                    modelo_usado = modelo
+
+                    break
+
+            except Exception as erro_modelo:
+
+                print("Erro no modelo:", modelo)
+                print(erro_modelo)
+
+        if resposta_texto:
+
+            return jsonify({
+
+                "response": resposta_texto,
+                "model": modelo_usado
+            })
+
+        else:
+
+            return jsonify({
+
+                "response":
+                "⚠️ Todas as IAs estão ocupadas no momento."
+            })
 
     except Exception as e:
 
-        print("ERRO:", e)
+        print("ERRO GERAL:", e)
 
         return jsonify({
 
             "response": str(e)
         })
-
 # ================== RUN ==================
 
 if __name__ == "__main__":
