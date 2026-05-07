@@ -18,58 +18,14 @@ def home():
 # ================== CHAT ==================
 @app.route("/chat", methods=["POST"])
 def chat():
-    try:
-        # pega mensagem enviada pelo site
-        data = request.get_json()
-        mensagem = data["message"]
 
-        # envia para OpenRouter
-        resposta = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "meta-llama/llama-3-8b-instruct",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Você é Sexta-Feira, uma assistente virtual feminina, "
-                            "inteligente, simpática e futurista. "
-                            "Sempre responda em português do Brasil."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": mensagem
-                    }
-                ]
-            }
-        )
+    data = request.get_json()
 
-        # transforma resposta em json
-        resposta_json = resposta.json()
+    mensagem = data["message"]
 
-        # mostra logs no Render
-        print(resposta_json)
-
-        # pega texto da IA
-        texto = resposta_json["choices"][0]["message"]["content"]
-
-        # envia pro site
-        return jsonify({
-            "response": texto
-        })
-
-    except Exception as e:
-        print("ERRO:", e)
-
-        return jsonify({
-            "response": str(e)
-        })
-
+    return jsonify({
+        "response": "Recebi: " + mensagem
+    })
 # ================== RUN ==================
 if __name__ == "__main__":
     print("🤖 Sexta-Feira online...")
