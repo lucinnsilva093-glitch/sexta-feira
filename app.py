@@ -1027,6 +1027,9 @@ def server_error(e):
     logger.exception("Erro interno do servidor")
     return jsonify({"erro": "Erro interno do servidor"}), 500
 
+@app.route("/ping")
+def ping():
+    return {"pong": True}, 200
 
 # ---------------------------------------------------------------------------
 # Entry point
