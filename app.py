@@ -1043,4 +1043,6 @@ if __name__ == "__main__":
         "Iniciando servidor na porta %d (max %d trocas/sessão, TTL %ds)",
         port, MAX_EXCHANGES, SESSION_TTL_SECONDS,
     )
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
