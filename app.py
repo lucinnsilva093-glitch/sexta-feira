@@ -1025,7 +1025,7 @@ def perguntar():
     }
 
     body = {
-        "model": "nvidia/nemotron-nano-9b-v2:free",
+        model: "openchat/openchat-7b:free",
         "messages": [
             {
                 "role": "system",
