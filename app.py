@@ -1025,7 +1025,7 @@ def perguntar():
     }
 
     body = {
-        "model": "mistralai/mistral-7b-instruct",
+        "model": "nvidia/nemotron-nano-9b-v2:free",
         "messages": [
             {
                 "role": "system",
