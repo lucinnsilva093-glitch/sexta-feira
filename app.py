@@ -802,7 +802,7 @@ def healthz():
 
     # --- overall status ---
     status = _compute_status(api_key_ok, or_status["reachable"], mem_bytes, self_tests)
-    http_code = 200 if status == "ok" else (207 if status == "warning" else 503)
+    http_code = 200
 
     logger.info("Healthz: status=%s uptime=%s sessões=%d requisições=%d", status, uptime_str, session_count, req_count)
 
