@@ -1051,7 +1051,7 @@ def perguntar():
         if "choices" not in resultado:
             return jsonify({"erro": "OpenRouter falhou", "detalhe": resultado}), 502
 
-        texto = resultado["choices"][0]["message"]["content"]
+        texto = resultado["choices"][0]["message"]["content"].strip()
 
         return jsonify({"resposta": texto}), 200
 
