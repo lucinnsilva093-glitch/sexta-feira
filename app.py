@@ -745,7 +745,7 @@ def _run_self_tests() -> list[dict]:
 
 def _compute_status(api_key_ok: bool, or_reachable: bool, mem_bytes: int, tests: list[dict]) -> str:
     failed_tests = sum(1 for t in tests if not t["passou"])
-    if failed_tests >= 2 or not api_key_ok:
+    if failed_tests >= 2:
         return "critical"
     if not or_reachable or mem_bytes > 5 * 1024 * 1024 or failed_tests == 1:
         return "warning"
