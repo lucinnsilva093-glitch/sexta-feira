@@ -1014,6 +1014,16 @@ def home():
         "ia": "Sexta-Feira",
         "mensagem": "Sistema operacional ativo."
     }, 200
+@app.route("/perguntar", methods=["POST"])
+def perguntar():
+    dados = request.get_json()
+
+    mensagem = dados.get("mensagem", "")
+
+    return {
+        "voce_disse": mensagem,
+        "resposta": f"Sexta-Feira ouviu: {mensagem}"
+    }, 200
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
