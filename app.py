@@ -1007,7 +1007,13 @@ def mesclar_sessoes():
         "mensagem": "Sessões mescladas com sucesso",
     }), 201
 
-
+@app.route("/")
+def home():
+    return {
+        "status": "online",
+        "ia": "Sexta-Feira",
+        "mensagem": "Sistema operacional ativo."
+    }, 200
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
