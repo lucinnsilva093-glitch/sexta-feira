@@ -171,12 +171,6 @@ def _after(response):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.route("/flask-api/perguntar", methods=["POST"])
-def perguntar():
-    if not OPENROUTER_API_KEY:
-        logger.error("OPENROUTER_API_KEY não está configurada")
-        return jsonify({"erro": "Chave da API não configurada no servidor"}), 500
-
     dados = request.get_json(silent=True)
     if not dados:
         return jsonify({"erro": "Corpo da requisição deve ser JSON válido"}), 400
