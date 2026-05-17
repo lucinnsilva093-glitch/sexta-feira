@@ -1014,9 +1014,40 @@ def perguntar():
 
     mensagem = dados.get("mensagem", "")
 
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    body = {
+        "model": "mistralai/mistral-7b-instruct",
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Você é Sexta-Feira, uma IA avançada, elegante, inteligente e divertida. "
+                    "Responda em português do Brasil."
+                )
+            },
+            {
+                "role": "user",
+                "content": mensagem
+            }
+        ]
+    }
+
+    resposta = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers=headers,
+        json=body
+    )
+
+    resultado = resposta.json()
+
+    texto = resultado["choices"][0]["message"]["content"]
+
     return {
-        "voce_disse": mensagem,
-        "resposta": f"Sexta-Feira ouviu: {mensagem}"
+        "resposta": texto
     }, 200
 # ---------------------------------------------------------------------------
 # Error handlers
