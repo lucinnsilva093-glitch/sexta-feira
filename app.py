@@ -1010,9 +1010,14 @@ def home():
     }, 200
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
-    dados = request.get_json()
+    dados = request.get_json(silent=True)
 
-    mensagem = dados.get("mensagem", "")
+    if not dados:
+        return jsonify({"erro": "JSON inválido"}), 400
+
+    mensagem = dados.get("mensagem", "").strip()
+    if not mensagem:
+        return jsonify({"erro": "mensagem vazia"}), 400
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -1024,10 +1029,7 @@ def perguntar():
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "Você é Sexta-Feira, uma IA avançada, elegante, inteligente e divertida. "
-                    "Responda em português do Brasil."
-                )
+                "content": "Você é Sexta-Feira, uma IA inteligente. Responda em português."
             },
             {
                 "role": "user",
@@ -1036,19 +1038,26 @@ def perguntar():
         ]
     }
 
-    resposta = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        json=body
-    )
+    try:
+        resposta = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=body,
+            timeout=30
+        )
 
-    resultado = resposta.json()
+        resultado = resposta.json()
 
-    texto = resultado["choices"][0]["message"]["content"]
+        if "choices" not in resultado:
+            return jsonify({"erro": "OpenRouter falhou", "detalhe": resultado}), 502
 
-    return {
-        "resposta": texto
-    }, 200
+        texto = resultado["choices"][0]["message"]["content"]
+
+        return jsonify({"resposta": texto}), 200
+
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"erro": "Falha ao gerar resposta"}), 500
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
