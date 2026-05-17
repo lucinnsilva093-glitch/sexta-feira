@@ -1035,14 +1035,21 @@ def server_error(e):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"
+
     if not OPENROUTER_API_KEY:
         logger.warning(
             "OPENROUTER_API_KEY não está definida — o endpoint /perguntar não funcionará"
         )
+
     logger.info(
         "Iniciando servidor na porta %d (max %d trocas/sessão, TTL %ds)",
-        port, MAX_EXCHANGES, SESSION_TTL_SECONDS,
+        port,
+        MAX_EXCHANGES,
+        SESSION_TTL_SECONDS,
     )
-    if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=debug
+    )
