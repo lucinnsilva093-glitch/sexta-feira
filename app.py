@@ -30,10 +30,14 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 MODELOS = [
 
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "deepseek/deepseek-chat:free",
+MODELOS = [
+
+    "google/gemini-flash-1.5:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "deepseek/deepseek-chat-v3-0324:free",
     "mistralai/mistral-7b-instruct:free"
+
+]
 
 ]
 
