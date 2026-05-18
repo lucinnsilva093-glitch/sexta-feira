@@ -1026,35 +1026,35 @@ def perguntar():
 
     for modelo in MODELOS:
 
-        try:
+    try:
 
-            print(f"Tentando modelo: {modelo}")
+        print(f"Tentando modelo: {modelo}")
 
-            resposta = requests.post(
+        resposta = requests.post(
 
-                "https://openrouter.ai/api/v1/chat/completions",
+            "https://openrouter.ai/api/v1/chat/completions",
 
-                headers={
+            headers={
 
-                    "Authorization":
-                    f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization":
+                f"Bearer {OPENROUTER_API_KEY}",
 
-                    "Content-Type":
-                    "application/json"
+                "Content-Type":
+                "application/json"
 
-                },
+            },
 
-                json={
+            json={
 
-                    "model": modelo,
+                "model": modelo,
 
-                    "messages": [
+                "messages": [
 
-                        {
+                    {
 
-                            "role": "system",
+                        "role": "system",
 
-                            "content": """
+                        "content": """
 
 Você é Sexta Feira,
 uma inteligência artificial avançada.
@@ -1066,49 +1066,50 @@ Responda de forma:
 
 """
 
-                        },
+                    },
 
-                        {
+                    {
 
-                            "role": "user",
+                        "role": "user",
 
-                            "content": pergunta
+                        "content": pergunta
 
-                        }
+                    }
 
-                    ]
+                ]
 
-                }
+            }
 
-            )
+        )
 
-            # se falhou
-    if resposta.status_code != 200:
+        # MODELO FALHOU
+        if resposta.status_code != 200:
 
-    print(f"Modelo falhou: {modelo}")
-    print(resposta.text)
+            print(f"Modelo falhou: {modelo}")
 
-    time.sleep(1)
+            print(resposta.text)
 
-    continue
+            time.sleep(1)
 
-            texto = resposta.json()["choices"][0]["message"]["content"]
+            continue
 
-            print(f"Modelo usado: {modelo}")
+        texto = resposta.json()["choices"][0]["message"]["content"]
 
-            return jsonify({
+        print(f"Modelo usado: {modelo}")
 
-                "resposta": texto,
+        return jsonify({
 
-                "modelo": modelo
+            "resposta": texto,
 
-            })
+            "modelo": modelo
 
-        except Exception as erro:
+        })
 
-            print(f"Erro no modelo {modelo}")
+    except Exception as erro:
 
-            print(erro)
+        print(f"Erro no modelo {modelo}")
+
+        print(erro)
 
     return jsonify({
 
