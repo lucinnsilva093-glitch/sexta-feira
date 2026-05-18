@@ -28,15 +28,7 @@ CORS(app)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-OPENROUTER_MODELS = [
-
-    "google/gemini-2.0-flash-exp:free",
-
-    "meta-llama/llama-3-8b-instruct:free",
-
-    "deepseek/deepseek-chat:free"
-
-]
+OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -217,71 +209,39 @@ def perguntar():
 
     for modelo in OPENROUTER_MODELS:
 
-        try:
+  try:
 
-            response = requests.post(
-                OPENROUTER_URL,
-                headers={
-                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost",
-                    "X-Title": "Sexta-Feira"
-                },
-                json={
-                    "model": modelo,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": SYSTEM_PROMPT
-                        },
-                        {
-                            "role": "user",
-                            "content": pergunta
-                        }
-                    ]
-                },
-                timeout=REQUEST_TIMEOUT
-            )
+    response = requests.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost",
+            "X-Title": "Sexta-Feira"
+        },
+        json={
+            "model": modelo,
+            "messages": messages_for_api
+        },
+        timeout=REQUEST_TIMEOUT
+    )
 
-            if response.status_code != 200:
+    if response.status_code != 200:
 
-                logger.warning(
-                    "Modelo falhou: %s | %s",
-                    modelo,
-                    response.text[:200]
-                )
+        logger.warning(
+            "Modelo falhou: %s | %s",
+            modelo,
+            response.text[:200]
+        )
 
-                ultimo_erro = response.text
+        return jsonify({
+            "erro": "Erro OpenRouter",
+            "detalhes": response.text
+        }), 500
 
-                continue
+    resposta = response.json()
 
-            resposta = response.json()
-
-            texto = resposta["choices"][0]["message"]["content"]
-
-            logger.info("Modelo usado: %s", modelo)
-
-            return jsonify({
-                "resposta": texto,
-                "modelo": modelo
-            })
-
-        except Exception as erro:
-
-            logger.error(
-                "Erro no modelo %s: %s",
-                modelo,
-                erro
-            )
-
-            ultimo_erro = str(erro)
-
-            continue
-
-    return jsonify({
-        "erro": "Todos os modelos falharam",
-        "detalhes": ultimo_erro
-    }), 500
+    texto = resposta["choices"][0]["message"]["content"]
 # =========================================================
 # HISTÓRICO
 # =========================================================
