@@ -1037,7 +1037,7 @@ def perguntar():
                 headers={
 
                     "Authorization":
-                    f"Bearer {OPENROUTER_KEY}",
+                    f"Bearer {OPENROUTER_API_KEY}",
 
                     "Content-Type":
                     "application/json"
