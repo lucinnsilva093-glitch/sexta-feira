@@ -23,8 +23,18 @@ app = Flask(__name__)
 CORS(app)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+MODELOS = [
+
+    "mistralai/mistral-7b-instruct",
+
+    "openchat/openchat-7b:free",
+
+    "meta-llama/llama-3-8b-instruct:free",
+
+    "google/gemma-7b-it:free"
+
+]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "nvidia/nemotron-nano-9b-v2:free"
 REQUEST_TIMEOUT = 30
 MAX_EXCHANGES = 10
 SESSION_TTL_SECONDS = 3600       # expire sessions inactive for 1 h
@@ -1010,54 +1020,109 @@ def home():
     }, 200
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
-    dados = request.get_json(silent=True)
 
-    if not dados:
-        return jsonify({"erro": "JSON inválido"}), 400
+    dados = request.json
+    pergunta = dados.get("mensagem")
 
-    mensagem = dados.get("mensagem", "").strip()
-    if not mensagem:
-        return jsonify({"erro": "mensagem vazia"}), 400
+    for modelo in MODELOS:
 
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
+        try:
 
-    body = {
-        model: "openchat/openchat-7b:free",
-        "messages": [
-            {
-                "role": "system",
-                "content": "Você é Sexta-Feira, uma IA inteligente. Responda em português."
-            },
-            {
-                "role": "user",
-                "content": mensagem
-            }
-        ]
-    }
+            print(f"Tentando modelo: {modelo}")
 
-    try:
-        resposta = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=body,
-            timeout=30
-        )
+            resposta = requests.post(
 
-        resultado = resposta.json()
+                "https://openrouter.ai/api/v1/chat/completions",
 
-        if "choices" not in resultado:
-            return jsonify({"erro": "OpenRouter falhou", "detalhe": resultado}), 502
+                headers={
 
-        texto = resultado["choices"][0]["message"]["content"].strip()
+                    "Authorization":
+                    f"Bearer {OPENROUTER_KEY}",
 
-        return jsonify({"resposta": texto}), 200
+                    "Content-Type":
+                    "application/json"
 
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"erro": "Falha ao gerar resposta"}), 500
+                },
+
+                json={
+
+                    "model": modelo,
+
+                    "messages": [
+
+                        {
+
+                            "role": "system",
+
+                            "content": """
+
+Você é Sexta Feira,
+uma inteligência artificial avançada.
+
+Responda de forma:
+- natural
+- objetiva
+- inteligente
+
+"""
+
+                        },
+
+                        {
+
+                            "role": "user",
+
+                            "content": pergunta
+
+                        }
+
+                    ]
+
+                }
+
+            )
+
+            # se falhou
+            if resposta.status_code != 200:
+
+                print(
+                    f"Modelo falhou: {modelo}"
+                )
+
+                print(resposta.text)
+
+                continue
+
+            texto = resposta.json()["choices"][0]["message"]["content"]
+
+            print(f"Modelo usado: {modelo}")
+
+            return jsonify({
+
+                "resposta": texto,
+
+                "modelo": modelo
+
+            })
+
+        except Exception as erro:
+
+            print(f"Erro no modelo {modelo}")
+
+            print(erro)
+
+    return jsonify({
+
+        "resposta":
+        "Senhor... todos os modelos falharam.",
+
+        "erro": True
+
+    }), 500
+
+
+if __name__ == "__main__":
+    app.run(port=5000)
 # ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
