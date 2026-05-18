@@ -1083,15 +1083,14 @@ Responda de forma:
             )
 
             # se falhou
-            if resposta.status_code != 200:
+    if resposta.status_code != 200:
 
-                print(
-                    f"Modelo falhou: {modelo}"
-                )
+    print(f"Modelo falhou: {modelo}")
+    print(resposta.text)
 
-                print(resposta.text)
+    time.sleep(1)
 
-                continue
+    continue
 
             texto = resposta.json()["choices"][0]["message"]["content"]
 
