@@ -28,7 +28,7 @@ CORS(app)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-OPENROUTER_MODEL = [
+OPENROUTER_MODELS = [
 
     "google/gemini-2.0-flash-exp:free",
 
