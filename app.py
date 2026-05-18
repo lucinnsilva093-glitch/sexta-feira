@@ -202,46 +202,71 @@ def _after(response):
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
 
-    dados = request.json
-    pergunta = dados.get("mensagem")
+    data = request.get_json()
 
-    ultimo_erro = "Nenhum modelo respondeu"
+    mensagem = data.get("mensagem", "").strip()
 
-    for modelo in OPENROUTER_MODELS:
+    if not mensagem:
+        return jsonify({
+            "erro": "Mensagem vazia"
+        }), 400
 
-  try:
-
-    response = requests.post(
-        OPENROUTER_URL,
-        headers={
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost",
-            "X-Title": "Sexta-Feira"
+    messages_for_api = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
         },
-        json={
-            "model": modelo,
-            "messages": messages_for_api
-        },
-        timeout=REQUEST_TIMEOUT
-    )
+        {
+            "role": "user",
+            "content": mensagem
+        }
+    ]
 
-    if response.status_code != 200:
+    try:
 
-        logger.warning(
-            "Modelo falhou: %s | %s",
-            modelo,
-            response.text[:200]
+        response = requests.post(
+            OPENROUTER_URL,
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost",
+                "X-Title": "Sexta-Feira"
+            },
+            json={
+                "model": OPENROUTER_MODEL,
+                "messages": messages_for_api
+            },
+            timeout=60
         )
 
+        if response.status_code != 200:
+
+            logger.error(
+                "Erro OpenRouter: %s",
+                response.text
+            )
+
+            return jsonify({
+                "erro": "Erro OpenRouter",
+                "detalhes": response.text
+            }), 500
+
+        resposta = response.json()
+
+        texto = resposta["choices"][0]["message"]["content"]
+
         return jsonify({
-            "erro": "Erro OpenRouter",
-            "detalhes": response.text
+            "resposta": texto
+        })
+
+    except Exception as erro:
+
+        logger.exception("Erro interno")
+
+        return jsonify({
+            "erro": "Erro interno do servidor",
+            "detalhes": str(erro)
         }), 500
-
-    resposta = response.json()
-
-    texto = resposta["choices"][0]["message"]["content"]
 # =========================================================
 # HISTÓRICO
 # =========================================================
