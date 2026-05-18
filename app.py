@@ -210,133 +210,78 @@ def _after(response):
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
 
-    dados = request.get_json(silent=True)
+    dados = request.json
+    pergunta = dados.get("mensagem")
 
-    if not dados:
-        return jsonify({
-            "erro": "JSON inválido"
-        }), 400
+    ultimo_erro = "Nenhum modelo respondeu"
 
-    pergunta = dados.get("mensagem", "").strip()
+    for modelo in OPENROUTER_MODELS:
 
-    if not pergunta:
-        return jsonify({
-            "erro": "Campo 'mensagem' obrigatório"
-        }), 400
+        try:
 
-    session_id = dados.get("session_id") or str(uuid.uuid4())
-
-    logger.info(
-        "Sessão %s | Usuário: %s",
-        session_id,
-        pergunta
-    )
-
-    with _lock:
-
-        session = _get_or_create(session_id)
-
-        session["messages"].append({
-            "role": "user",
-            "content": pergunta,
-            "timestamp": _iso(_now())
-        })
-
-        messages_for_api = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            }
-        ] + _history_for_api(session)
-
-   ultimo_erro = "Nenhum modelo respondeu"
-
-for modelo in OPENROUTER_MODELS:
-
-    try:
-
-        response = requests.post(
-            OPENROUTER_URL,
-            headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost",
-                "X-Title": "Sexta-Feira"
-            },
-            json={
-                "model": modelo,
-                "messages": messages_for_api
-            },
-            timeout=REQUEST_TIMEOUT
-        )
-
-        if response.status_code != 200:
-
-            logger.warning(
-                "Modelo falhou: %s | %s",
-                modelo,
-                response.text[:200]
+            response = requests.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost",
+                    "X-Title": "Sexta-Feira"
+                },
+                json={
+                    "model": modelo,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": SYSTEM_PROMPT
+                        },
+                        {
+                            "role": "user",
+                            "content": pergunta
+                        }
+                    ]
+                },
+                timeout=REQUEST_TIMEOUT
             )
 
-            ultimo_erro = response.text
+            if response.status_code != 200:
+
+                logger.warning(
+                    "Modelo falhou: %s | %s",
+                    modelo,
+                    response.text[:200]
+                )
+
+                ultimo_erro = response.text
+
+                continue
+
+            resposta = response.json()
+
+            texto = resposta["choices"][0]["message"]["content"]
+
+            logger.info("Modelo usado: %s", modelo)
+
+            return jsonify({
+                "resposta": texto,
+                "modelo": modelo
+            })
+
+        except Exception as erro:
+
+            logger.error(
+                "Erro no modelo %s: %s",
+                modelo,
+                erro
+            )
+
+            ultimo_erro = str(erro)
 
             continue
 
-        resposta = response.json()
-
-        texto = resposta["choices"][0]["message"]["content"]
-
-        with _lock:
-
-            session = _sessions[session_id]
-
-            session["messages"].append({
-                "role": "assistant",
-                "content": texto,
-                "timestamp": _iso(_now())
-            })
-
-            _trim(session)
-            _touch(session)
-
-        logger.info(
-            "Modelo usado: %s",
-            modelo
-        )
-
-        return jsonify({
-            "resposta": texto,
-            "modelo": modelo,
-            "session_id": session_id
-        })
-
-    except Exception as erro:
-
-        logger.error(
-            "Erro no modelo %s: %s",
-            modelo,
-            erro
-        )
-
-        ultimo_erro = str(erro)
-
-        continue
-
-
-# TODOS FALHARAM
-with _lock:
-
-    if session_id in _sessions:
-
-        msgs = _sessions[session_id]["messages"]
-
-        if msgs and msgs[-1]["role"] == "user":
-            msgs.pop()
-
-return jsonify({
-    "erro": "Todos os modelos falharam",
-    "detalhes": ultimo_erro
-}), 500
+    return jsonify({
+        "erro": "Todos os modelos falharam",
+        "detalhes": ultimo_erro
+    }), 500
 # =========================================================
 # HISTÓRICO
 # =========================================================
