@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import threading
 import time
 import uuid
@@ -9,7 +10,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
 import requests
-from flask import Flask, g, jsonify, make_response, request
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 
 # =========================================================
@@ -32,7 +33,7 @@ OPENROUTER_MODEL = "openrouter/free"
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-REQUEST_TIMEOUT = 30
+REQUEST_TIMEOUT = 60
 MAX_EXCHANGES = 10
 SESSION_TTL_SECONDS = 3600
 CLEANUP_INTERVAL_SECONDS = 300
@@ -44,19 +45,44 @@ SEARCH_MAX_LIMIT = 100
 CONTEXT_CHARS = 80
 
 SYSTEM_PROMPT = """
-Você é Sexta Feira,
+Você é Sexta-Feira,
 uma inteligência artificial avançada.
 
-Responda:
-- naturalmente
-- sem inventar fatos
-- objetiva
+Seu comportamento:
+- natural
 - inteligente
-- sem misturar cidades ou informações erradas
+- objetiva
+- amigável
+- sem inventar fatos
+- sem misturar informações
+- responde em português brasileiro
+- possui memória das conversas anteriores
 """
 
 # =========================================================
-# MEMÓRIA
+# BANCO DE MEMÓRIA
+# =========================================================
+
+conn = sqlite3.connect(
+    "memoria.db",
+    check_same_thread=False
+)
+
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS memoria (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pergunta TEXT,
+    resposta TEXT,
+    timestamp TEXT
+)
+""")
+
+conn.commit()
+
+# =========================================================
+# MEMÓRIA RAM
 # =========================================================
 
 _sessions = {}
@@ -86,6 +112,7 @@ def _iso(dt):
     return dt.isoformat()
 
 def _get_or_create(session_id):
+
     if session_id not in _sessions:
 
         ts = _now()
@@ -128,12 +155,14 @@ def _memory_bytes(session):
     )
 
 # =========================================================
-# CLEANUP
+# LIMPEZA
 # =========================================================
 
 def _cleanup_stale_sessions():
 
-    cutoff = _now() - timedelta(seconds=SESSION_TTL_SECONDS)
+    cutoff = _now() - timedelta(
+        seconds=SESSION_TTL_SECONDS
+    )
 
     with _lock:
 
@@ -196,47 +225,131 @@ def _after(response):
     return response
 
 # =========================================================
+# MEMÓRIA INTELIGENTE
+# =========================================================
+
+def buscar_memorias():
+
+    try:
+
+        cursor.execute("""
+        SELECT pergunta, resposta
+        FROM memoria
+        ORDER BY id DESC
+        LIMIT 5
+        """)
+
+        memorias = cursor.fetchall()
+
+        contexto = ""
+
+        for pergunta, resposta in memorias:
+
+            contexto += (
+                f"Usuário: {pergunta}\n"
+                f"Sexta-Feira: {resposta}\n\n"
+            )
+
+        return contexto
+
+    except Exception as erro:
+
+        logger.error(
+            "Erro ao buscar memória: %s",
+            erro
+        )
+
+        return ""
+
+def salvar_memoria(pergunta, resposta):
+
+    try:
+
+        cursor.execute("""
+        INSERT INTO memoria (
+            pergunta,
+            resposta,
+            timestamp
+        )
+        VALUES (?, ?, ?)
+        """, (
+            pergunta,
+            resposta,
+            datetime.now().isoformat()
+        ))
+
+        conn.commit()
+
+    except Exception as erro:
+
+        logger.error(
+            "Erro ao salvar memória: %s",
+            erro
+        )
+
+# =========================================================
 # IA
 # =========================================================
 
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
 
-    data = request.get_json()
-
-    mensagem = data.get("mensagem", "").strip()
-
-    if not mensagem:
-        return jsonify({
-            "erro": "Mensagem vazia"
-        }), 400
-
-    messages_for_api = [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT
-        },
-        {
-            "role": "user",
-            "content": mensagem
-        }
-    ]
-
     try:
+
+        data = request.get_json()
+
+        mensagem = data.get(
+            "mensagem",
+            ""
+        ).strip()
+
+        if not mensagem:
+
+            return jsonify({
+                "erro": "Mensagem vazia"
+            }), 400
+
+        contexto_memoria = buscar_memorias()
+
+        messages_for_api = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "system",
+                "content":
+                    "Memórias recentes:\n\n"
+                    f"{contexto_memoria}"
+            },
+            {
+                "role": "user",
+                "content": mensagem
+            }
+        ]
+
+        logger.info(
+            "Pergunta recebida: %s",
+            mensagem
+        )
 
         response = requests.post(
             OPENROUTER_URL,
             headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost",
-                "X-Title": "Sexta-Feira"
+                "Authorization":
+                    f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type":
+                    "application/json",
+                "HTTP-Referer":
+                    "http://localhost",
+                "X-Title":
+                    "Sexta-Feira"
             },
             json={
                 "model": OPENROUTER_MODEL,
                 "messages": messages_for_api
             },
-            timeout=60
+            timeout=REQUEST_TIMEOUT
         )
 
         if response.status_code != 200:
@@ -253,7 +366,19 @@ def perguntar():
 
         resposta = response.json()
 
-        texto = resposta["choices"][0]["message"]["content"]
+        texto = (
+            resposta["choices"][0]
+            ["message"]["content"]
+        )
+
+        salvar_memoria(
+            mensagem,
+            texto
+        )
+
+        logger.info(
+            "Resposta enviada com sucesso"
+        )
 
         return jsonify({
             "resposta": texto
@@ -261,29 +386,44 @@ def perguntar():
 
     except Exception as erro:
 
-        logger.exception("Erro interno")
+        logger.exception(
+            "Erro interno do servidor"
+        )
 
         return jsonify({
-            "erro": "Erro interno do servidor",
-            "detalhes": str(erro)
+            "erro":
+                "Erro interno do servidor",
+            "detalhes":
+                str(erro)
         }), 500
+
 # =========================================================
 # HISTÓRICO
 # =========================================================
 
-@app.route("/flask-api/historico", methods=["GET"])
+@app.route(
+    "/flask-api/historico",
+    methods=["GET"]
+)
 def historico():
 
-    session_id = request.args.get("session_id", "").strip()
+    session_id = request.args.get(
+        "session_id",
+        ""
+    ).strip()
 
     if not session_id:
+
         return jsonify({
-            "erro": "Parâmetro 'session_id' obrigatório"
+            "erro":
+                "Parâmetro session_id obrigatório"
         }), 400
 
     with _lock:
 
-        session = _sessions.get(session_id)
+        session = _sessions.get(
+            session_id
+        )
 
         if not session:
 
@@ -305,22 +445,41 @@ def historico():
 # LIMPAR HISTÓRICO
 # =========================================================
 
-@app.route("/flask-api/limpar-historico", methods=["POST"])
+@app.route(
+    "/flask-api/limpar-historico",
+    methods=["POST"]
+)
 def limpar_historico():
 
-    dados = request.get_json(silent=True) or {}
+    dados = (
+        request.get_json(
+            silent=True
+        ) or {}
+    )
 
-    session_id = dados.get("session_id", "").strip()
+    session_id = dados.get(
+        "session_id",
+        ""
+    ).strip()
 
     if not session_id:
+
         return jsonify({
-            "erro": "Campo 'session_id' obrigatório"
+            "erro":
+                "Campo session_id obrigatório"
         }), 400
 
     with _lock:
-        session = _sessions.pop(session_id, None)
 
-    removidas = len(session["messages"]) if session else 0
+        session = _sessions.pop(
+            session_id,
+            None
+        )
+
+    removidas = (
+        len(session["messages"])
+        if session else 0
+    )
 
     return jsonify({
         "mensagens_removidas": removidas,
@@ -328,208 +487,13 @@ def limpar_historico():
     })
 
 # =========================================================
-# LISTAR SESSÕES
-# =========================================================
-
-@app.route("/flask-api/sessoes", methods=["GET"])
-def sessoes():
-
-    with _lock:
-
-        result = []
-
-        for sid, s in _sessions.items():
-
-            result.append({
-                "session_id": sid,
-                "total_mensagens": len(s["messages"]),
-                "created_at": _iso(s["created_at"]),
-                "last_activity": _iso(s["last_activity"]),
-                "memoria_bytes": _memory_bytes(s)
-            })
-
-    result.sort(
-        key=lambda x: x["last_activity"],
-        reverse=True
-    )
-
-    return jsonify({
-        "total_sessoes": len(result),
-        "sessoes": result
-    })
-
-# =========================================================
-# BUSCA
-# =========================================================
-
-VALID_ROLES = {"user", "assistant"}
-
-def _check_rate_limit(ip):
-
-    window_start = _now() - timedelta(seconds=SEARCH_RATE_WINDOW)
-
-    with _rate_lock:
-
-        _search_rate[ip] = [
-            ts for ts in _search_rate[ip]
-            if ts > window_start
-        ]
-
-        if len(_search_rate[ip]) >= SEARCH_RATE_LIMIT:
-            return False
-
-        _search_rate[ip].append(_now())
-
-        return True
-
-def _highlight_snippet(content, keyword):
-
-    snippets = []
-
-    pattern = re.compile(
-        re.escape(keyword),
-        re.IGNORECASE
-    )
-
-    for m in pattern.finditer(content):
-
-        start, end = m.start(), m.end()
-
-        ctx_start = max(0, start - CONTEXT_CHARS)
-        ctx_end = min(len(content), end + CONTEXT_CHARS)
-
-        prefix = (
-            "..." if ctx_start > 0 else ""
-        ) + content[ctx_start:start]
-
-        match = f"<<{content[start:end]}>>"
-
-        suffix = content[end:ctx_end] + (
-            "..." if ctx_end < len(content) else ""
-        )
-
-        snippets.append({
-            "trecho": prefix + match + suffix,
-            "inicio": start,
-            "fim": end
-        })
-
-    return snippets
-
-def _collect_search_results(keyword, role_filter, session_filter):
-
-    with _lock:
-
-        snapshot = {
-            sid: {
-                "messages": list(s["messages"]),
-                "last_activity": s["last_activity"]
-            }
-            for sid, s in _sessions.items()
-            if session_filter is None or sid == session_filter
-        }
-
-    results = []
-
-    for sid, s in snapshot.items():
-
-        for idx, msg in enumerate(s["messages"]):
-
-            if role_filter and msg["role"] != role_filter:
-                continue
-
-            snippets = _highlight_snippet(
-                msg["content"],
-                keyword
-            )
-
-            if not snippets:
-                continue
-
-            results.append({
-                "session_id": sid,
-                "mensagem_index": idx,
-                "role": msg["role"],
-                "timestamp": msg.get("timestamp", ""),
-                "trechos": snippets,
-                "conteudo_completo": msg["content"]
-            })
-
-    return results
-
-@app.route("/flask-api/sessoes/buscar", methods=["GET"])
-def buscar():
-
-    ip = request.remote_addr or "unknown"
-
-    if not _check_rate_limit(ip):
-        return jsonify({
-            "erro": "Rate limit atingido"
-        }), 429
-
-    keyword = request.args.get("q", "").strip()
-
-    if not keyword:
-        return jsonify({
-            "erro": "Parâmetro q obrigatório"
-        }), 400
-
-    role_filter = request.args.get("role", "").strip().lower() or None
-
-    if role_filter and role_filter not in VALID_ROLES:
-
-        return jsonify({
-            "erro": "role deve ser user ou assistant"
-        }), 400
-
-    session_filter = request.args.get("session_id", "").strip() or None
-
-    try:
-
-        limite = min(
-            int(request.args.get("limite", SEARCH_DEFAULT_LIMIT)),
-            SEARCH_MAX_LIMIT
-        )
-
-        pagina = max(
-            1,
-            int(request.args.get("pagina", 1))
-        )
-
-    except ValueError:
-
-        return jsonify({
-            "erro": "pagina e limite devem ser inteiros"
-        }), 400
-
-    all_results = _collect_search_results(
-        keyword,
-        role_filter,
-        session_filter
-    )
-
-    total = len(all_results)
-
-    offset = (pagina - 1) * limite
-
-    page_results = all_results[offset:offset + limite]
-
-    total_paginas = max(1, -(-total // limite))
-
-    return jsonify({
-        "q": keyword,
-        "pagina": pagina,
-        "limite": limite,
-        "total_resultados": total,
-        "total_paginas": total_paginas,
-        "resultados": page_results
-    })
-
-# =========================================================
 # HEALTH
 # =========================================================
 
-@app.route(HEALTHZ_PATH, methods=["GET"])
+@app.route(
+    HEALTHZ_PATH,
+    methods=["GET"]
+)
 def healthz():
 
     now = _now()
@@ -537,15 +501,6 @@ def healthz():
     uptime_secs = (
         now - _server_start
     ).total_seconds()
-
-    with _lock:
-
-        session_count = len(_sessions)
-
-        total_messages = sum(
-            len(s["messages"])
-            for s in _sessions.values()
-        )
 
     with _stats_lock:
 
@@ -556,19 +511,20 @@ def healthz():
         if req_count:
 
             avg_response_ms = round(
-                _stats["total_response_ms"] / req_count,
+                _stats["total_response_ms"]
+                / req_count,
                 2
             )
 
     return jsonify({
         "status": "ok",
         "timestamp": _iso(now),
-        "uptime_segundos": round(uptime_secs, 1),
-        "sessoes_ativas": session_count,
-        "mensagens": total_messages,
+        "uptime_segundos":
+            round(uptime_secs, 1),
         "requests": req_count,
-        "tempo_medio_ms": avg_response_ms,
-        "modelos": MODELOS
+        "tempo_medio_ms":
+            avg_response_ms,
+        "modelo": OPENROUTER_MODEL
     })
 
 # =========================================================
@@ -581,7 +537,8 @@ def home():
     return {
         "status": "online",
         "ia": "Sexta-Feira",
-        "mensagem": "Sistema operacional ativo."
+        "mensagem":
+            "Sistema operacional ativo."
     }, 200
 
 @app.route("/ping")
@@ -599,23 +556,28 @@ def ping():
 def not_found(e):
 
     return jsonify({
-        "erro": "Rota não encontrada"
+        "erro":
+            "Rota não encontrada"
     }), 404
 
 @app.errorhandler(405)
 def method_not_allowed(e):
 
     return jsonify({
-        "erro": "Método não permitido"
+        "erro":
+            "Método não permitido"
     }), 405
 
 @app.errorhandler(500)
 def server_error(e):
 
-    logger.exception("Erro interno do servidor")
+    logger.exception(
+        "Erro interno do servidor"
+    )
 
     return jsonify({
-        "erro": "Erro interno do servidor"
+        "erro":
+            "Erro interno do servidor"
     }), 500
 
 # =========================================================
@@ -624,9 +586,18 @@ def server_error(e):
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 5000))
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
 
-    debug = os.environ.get("FLASK_ENV") == "development"
+    debug = (
+        os.environ.get(
+            "FLASK_ENV"
+        ) == "development"
+    )
 
     if not OPENROUTER_API_KEY:
 
