@@ -6,6 +6,8 @@ import sqlite3
 import threading
 import time
 import uuid
+import asyncio
+import edge_tts
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
@@ -286,7 +288,20 @@ def salvar_memoria(pergunta, resposta):
             "Erro ao salvar memória: %s",
             erro
         )
+        
+# =========================================================
+# EDGE TTS
+# =========================================================
 
+async def gerar_audio(texto, arquivo):
+
+    communicate = edge_tts.Communicate(
+        texto,
+        voice="pt-BR-FranciscaNeural"
+    )
+
+    await communicate.save(arquivo)
+    
 # =========================================================
 # IA
 # =========================================================
@@ -376,14 +391,28 @@ def perguntar():
             texto
         )
 
+        audio_id = str(uuid.uuid4()) + ".mp3"
+
+        audio_path = os.path.join(
+            "static",
+            audio_id
+        )
+
+        asyncio.run(
+            gerar_audio(
+                texto,
+                audio_path
+            )
+        )
+
         logger.info(
             "Resposta enviada com sucesso"
         )
 
         return jsonify({
-            "resposta": texto
+            "resposta": texto,
+            "audio": f"/static/{audio_id}"
         })
-
     except Exception as erro:
 
         logger.exception(
