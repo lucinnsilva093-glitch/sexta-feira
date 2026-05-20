@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sexta-Feira</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Segoe UI, sans-serif;
+        }
+
+        body {
+            background: #01060d;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+            body::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: radial-gradient( circle at center, rgba(0,255,255,.05), transparent 60% );
+            }
+
+        .logoArea {
+            position: absolute;
+            top: 40px;
+            left: 50px;
+        }
+
+        .logo {
+            font-size: 60px;
+            color: #00f7ff;
+            letter-spacing: 6px;
+        }
+
+        .sub {
+            margin-top: 10px;
+            color: #aaa;
+        }
+
+        .topClock {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            text-align: right;
+        }
+
+        .time {
+            font-size: 60px;
+            color: #00f7ff;
+        }
+
+        .date {
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .center {
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            transform: translate(-50%, -50%);
+        }
+
+        .planet {
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: radial-gradient( circle, #9afcff, #0077aa );
+        }
+
+        .ring {
+            position: absolute;
+            width: 650px;
+            height: 650px;
+            border-radius: 50%;
+            border: 18px solid rgba(0,255,255,0.35);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scaleY(0.28) rotate(-18deg);
+            box-shadow: 0 0 25px rgba(0,255,255,0.25);
+            z-index: -1;
+        }
+
+        .chat {
+            position: absolute;
+            left: 50px;
+            bottom: 220px;
+            width: 500px;
+        }
+
+        .chatTitle {
+            color: #00f7ff;
+            margin-top: 10px;
+        }
+
+        .chatText {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .inputArea {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            width: 600px;
+            height: 60px;
+            border-radius: 30px;
+            border: none;
+            padding: 0 20px;
+            font-size: 18px;
+            outline: none;
+        }
+
+        button {
+            width: 140px;
+            border-radius: 30px;
+            border: none;
+            background: #00f7ff;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .mic {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: #00f7ff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="logoArea">
+        <div class="logo">SEXTA-FEIRA</div>
+        <div class="sub">assistente online</div>
+    </div>
+
+    <div class="topClock">
+        <div class="time" id="hora">00:00:00</div>
+        <div class="date" id="data">carregando...</div>
+    </div>
+
+    <div class="center">
+        <div class="ring"></div>
+        <div class="planet"></div>
+    </div>
+
+    <div class="chat">
+        <div class="chatTitle">VOCÊ:</div>
+
+        <div class="chatText"
+             id="perguntaTexto">
+            ...
+        </div>
+
+        <div class="chatTitle">
+            SEXTA-FEIRA:
+        </div>
+
+        <div class="chatText"
+             id="resposta">
+            Sistema pronto.
+        </div>
+    </div>
+
+    <div class="inputArea">
+
+        <input id="pergunta"
+               placeholder="Digite ou fale algo...">
+
+        <button onclick="enviarPergunta()">
+            ENVIAR
+        </button>
+
+    </div>
+
+    <div class="mic"
+         onclick="toggleMic()">
+        🎙️ Falar
+    </div>
+
+    <script>
+
+        const API_URL =
+        "https://sexta-feira-p8np.onrender.com/perguntar";
+
+        let recognition;
+
+        let micAtivo = false;
+
+        // ===================== RELÓGIO =====================
+
+        function atualizarHora(){
+
+        const agora = new Date();
+
+        document.getElementById(
+        "hora"
+        ).innerText = agora.toLocaleTimeString(
+        "pt-BR"
+        );
+
+        document.getElementById(
+        "data"
+        ).innerText = agora.toLocaleDateString(
+        "pt-BR",
+        {
+        weekday:"long",
+        day:"numeric",
+        month:"long"
+        }
+        );
+        }
+
+        setInterval(atualizarHora, 1000);
+
+        atualizarHora();
+
+        // ===================== IA =====================
+
+        async function enviarTexto(texto){
+
+        document.getElementById(
+        "perguntaTexto"
+        ).innerText = texto;
+
+        try{
+
+        const res = await fetch(API_URL, {
+
+        method: "POST",
+
+        headers: {
+        "Content-Type":"application/json"
+        },
+
+        body: JSON.stringify({
+        mensagem: texto
+        })
+        });
+
+        const data = await res.json();
+
+        console.log(data);
+
+        const resposta =
+        data.resposta || "Erro na resposta";
+
+        document.getElementById(
+        "resposta"
+        ).innerText = resposta;
+
+        // ================= ÁUDIO =================
+
+        if(data.audio){
+
+        const audio = new Audio(
+        "https://sexta-feira-p8np.onrender.com"
+        + data.audio
+        );
+
+        audio.play();
+        }
+
+        // ================= LINKS =================
+
+        if(data.abrir_link){
+
+        window.location.href =
+        data.abrir_link;
+        }
+
+        } catch(err){
+
+        console.log(err);
+
+        document.getElementById(
+        "resposta"
+        ).innerText =
+        "Erro ao conectar com a IA.";
+        }
+        }
+
+        // ===================== INPUT =====================
+
+        function enviarPergunta(){
+
+        const texto = document.getElementById(
+        "pergunta"
+        ).value;
+
+        if(!texto) return;
+
+        enviarTexto(texto);
+
+        document.getElementById(
+        "pergunta"
+        ).value = "";
+        }
+
+        // ENTER ENVIA
+
+        document.getElementById(
+        "pergunta"
+        ).addEventListener(
+        "keydown",
+        function(event){
+
+        if(event.key === "Enter"){
+
+        enviarPergunta();
+        }
+        }
+        );
+
+        // ===================== MIC =====================
+
+        function toggleMic(){
+
+        if(!(
+        'webkitSpeechRecognition'
+        in window
+        )){
+        alert(
+        "Seu navegador não suporta voz"
+        );
+
+        return;
+        }
+
+        if(!recognition){
+
+        recognition =
+        new webkitSpeechRecognition();
+
+        recognition.lang = "pt-BR";
+
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+
+        const texto =
+        event.results[
+        event.results.length - 1
+        ][0].transcript;
+
+        if(
+        texto.trim().length < 2
+        ) return;
+
+        enviarTexto(texto);
+        };
+        }
+
+        if(!micAtivo){
+
+        recognition.start();
+
+        micAtivo = true;
+
+        } else {
+
+        recognition.stop();
+
+        micAtivo = false;
+        }
+        }
+
+    </script>
+
+</body>
+</html>
