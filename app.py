@@ -352,49 +352,67 @@ def perguntar():
             texto
         )
 
-        # =====================================================
-        # LINKS
-        # =====================================================
 
-        link = None
+    # =====================================================
+    # LINKS
+    # =====================================================
 
-        texto_lower = texto.lower()
+    link = None
 
-        if "spotify" in mensagem.lower():
+    texto_lower = texto.lower()
 
-            busca = (
-                mensagem.lower()
-                .replace("spotify", "")
-                .strip()
+    # ================= SPOTIFY PLAYLIST FIXA =================
+
+    if "tocar playlist" in texto_lower:
+
+        link = (
+            "https://open.spotify.com/search/"
+            + requests.utils.quote(
+                "play do menosmenos"
             )
+        )
 
-            link = (
-                "https://open.spotify.com/search/"
-                + requests.utils.quote(busca)
-            )
+    # ================= SPOTIFY =================
 
-        elif (
-            "mapa" in mensagem.lower()
-            or "google maps" in mensagem.lower()
-        ):
+    elif "spotify" in texto_lower:
 
-            link = (
-                "https://www.google.com/maps/search/"
-                + requests.utils.quote(mensagem)
-            )
+        busca = (
+            texto_lower
+            .replace("spotify", "")
+            .strip()
+        )
 
-        elif "youtube" in mensagem.lower():
+        link = (
+            "https://open.spotify.com/search/"
+            + requests.utils.quote(busca)
+        )
 
-            busca = (
-                mensagem.lower()
-                .replace("youtube", "")
-                .strip()
-            )
+    # ================= MAPAS =================
 
-            link = (
-                "https://www.youtube.com/results?search_query="
-                + requests.utils.quote(busca)
-            )
+    elif (
+        "mapa" in texto_lower
+        or "google maps" in texto_lower
+    ):
+
+        link = (
+            "https://www.google.com/maps/search/"
+            + requests.utils.quote(texto)
+        )
+
+    # ================= YOUTUBE =================
+
+    elif "youtube" in texto_lower:
+
+        busca = (
+            texto_lower
+            .replace("youtube", "")
+            .strip()
+        )
+
+        link = (
+            "https://www.youtube.com/results?search_query="
+            + requests.utils.quote(busca)
+        )
 
         # =====================================================
         # ÁUDIO
