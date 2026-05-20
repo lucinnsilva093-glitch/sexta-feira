@@ -280,14 +280,19 @@
         audio.play();
         }
 
-        // ================= LINKS =================
+// ================= LINKS =================
 
-        if(data.abrir_link){
+if(data.abrir_link){
 
-        window.location.href =
+    const novaAba = window.open(
+        "",
+        "_blank"
+    );
+
+    novaAba.location.href =
         data.abrir_link;
-        }
-
+}
+            
         } catch(err){
 
         console.log(err);
