@@ -1,16 +1,15 @@
+import asyncio
 import json
 import logging
 import os
 import re
-import sqlite3
 import threading
 import time
 import uuid
-import asyncio
-import edge_tts
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+import edge_tts
 import requests
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
@@ -29,68 +28,55 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.getenv(
+    "OPENROUTER_API_KEY"
+)
 
 OPENROUTER_MODEL = "openrouter/free"
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_URL = (
+    "https://openrouter.ai/api/v1/chat/completions"
+)
 
 REQUEST_TIMEOUT = 60
+
 MAX_EXCHANGES = 10
+
 SESSION_TTL_SECONDS = 3600
+
 CLEANUP_INTERVAL_SECONDS = 300
 
 SEARCH_RATE_LIMIT = 10
 SEARCH_RATE_WINDOW = 60
+
 SEARCH_DEFAULT_LIMIT = 20
 SEARCH_MAX_LIMIT = 100
+
 CONTEXT_CHARS = 80
 
 SYSTEM_PROMPT = """
-Você é Sexta-Feira,
+Você é Sexta Feira,
 uma inteligência artificial avançada.
 
-Seu comportamento:
-- natural
+Responda:
+- naturalmente
 - inteligente
 - objetiva
 - amigável
 - sem inventar fatos
 - sem misturar informações
-- responde em português brasileiro
-- possui memória das conversas anteriores
 """
 
 # =========================================================
-# BANCO DE MEMÓRIA
-# =========================================================
-
-conn = sqlite3.connect(
-    "memoria.db",
-    check_same_thread=False
-)
-
-cursor = conn.cursor()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS memoria (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pergunta TEXT,
-    resposta TEXT,
-    timestamp TEXT
-)
-""")
-
-conn.commit()
-
-# =========================================================
-# MEMÓRIA RAM
+# MEMÓRIA
 # =========================================================
 
 _sessions = {}
+
 _lock = threading.Lock()
 
 _search_rate = defaultdict(list)
+
 _rate_lock = threading.Lock()
 
 _server_start = datetime.now(timezone.utc)
@@ -128,6 +114,7 @@ def _get_or_create(session_id):
     return _sessions[session_id]
 
 def _touch(session):
+
     session["last_activity"] = _now()
 
 def _trim(session):
@@ -135,7 +122,10 @@ def _trim(session):
     max_msgs = MAX_EXCHANGES * 2
 
     if len(session["messages"]) > max_msgs:
-        session["messages"] = session["messages"][-max_msgs:]
+
+        session["messages"] = (
+            session["messages"][-max_msgs:]
+        )
 
 def _history_for_api(session):
 
@@ -156,14 +146,39 @@ def _memory_bytes(session):
         ).encode("utf-8")
     )
 
+def salvar_memoria(pergunta, resposta):
+
+    session_id = "usuario"
+
+    with _lock:
+
+        session = _get_or_create(session_id)
+
+        session["messages"].append({
+            "role": "user",
+            "content": pergunta,
+            "timestamp": _iso(_now())
+        })
+
+        session["messages"].append({
+            "role": "assistant",
+            "content": resposta,
+            "timestamp": _iso(_now())
+        })
+
+        _touch(session)
+
+        _trim(session)
+
 # =========================================================
-# LIMPEZA
+# CLEANUP
 # =========================================================
 
 def _cleanup_stale_sessions():
 
-    cutoff = _now() - timedelta(
-        seconds=SESSION_TTL_SECONDS
+    cutoff = (
+        _now()
+        - timedelta(seconds=SESSION_TTL_SECONDS)
     )
 
     with _lock:
@@ -179,7 +194,7 @@ def _cleanup_stale_sessions():
     if stale:
 
         logger.info(
-            "Limpeza automática: %d sessão(ões) removida(s)",
+            "Limpeza automática: %d sessão(ões)",
             len(stale)
         )
 
@@ -193,13 +208,15 @@ def _schedule_cleanup():
     )
 
     t.daemon = True
+
     t.start()
 
 if not os.environ.get("WERKZEUG_RUN_MAIN"):
+
     _schedule_cleanup()
 
 # =========================================================
-# REQUEST TRACKING
+# TRACKING
 # =========================================================
 
 HEALTHZ_PATH = "/flask-api/healthz"
@@ -208,100 +225,43 @@ HEALTHZ_PATH = "/flask-api/healthz"
 def _before():
 
     if request.path != HEALTHZ_PATH:
+
         g._req_start = time.perf_counter()
 
 @app.after_request
 def _after(response):
 
-    if request.path != HEALTHZ_PATH and hasattr(g, "_req_start"):
+    if (
+        request.path != HEALTHZ_PATH
+        and hasattr(g, "_req_start")
+    ):
 
         elapsed_ms = (
-            time.perf_counter() - g._req_start
+            time.perf_counter()
+            - g._req_start
         ) * 1000
 
         with _stats_lock:
 
             _stats["request_count"] += 1
+
             _stats["total_response_ms"] += elapsed_ms
 
     return response
 
 # =========================================================
-# MEMÓRIA INTELIGENTE
+# TTS
 # =========================================================
 
-def buscar_memorias():
-
-    try:
-
-        cursor.execute("""
-        SELECT pergunta, resposta
-        FROM memoria
-        ORDER BY id DESC
-        LIMIT 5
-        """)
-
-        memorias = cursor.fetchall()
-
-        contexto = ""
-
-        for pergunta, resposta in memorias:
-
-            contexto += (
-                f"Usuário: {pergunta}\n"
-                f"Sexta-Feira: {resposta}\n\n"
-            )
-
-        return contexto
-
-    except Exception as erro:
-
-        logger.error(
-            "Erro ao buscar memória: %s",
-            erro
-        )
-
-        return ""
-
-def salvar_memoria(pergunta, resposta):
-
-    try:
-
-        cursor.execute("""
-        INSERT INTO memoria (
-            pergunta,
-            resposta,
-            timestamp
-        )
-        VALUES (?, ?, ?)
-        """, (
-            pergunta,
-            resposta,
-            datetime.now().isoformat()
-        ))
-
-        conn.commit()
-
-    except Exception as erro:
-
-        logger.error(
-            "Erro ao salvar memória: %s",
-            erro
-        )
-        
-# =========================================================
-# EDGE TTS
-# =========================================================
-
-async def gerar_audio(texto, arquivo):
+async def gerar_audio(texto, caminho):
 
     communicate = edge_tts.Communicate(
         texto,
         voice="pt-BR-FranciscaNeural"
     )
 
-    await communicate.save(arquivo)
-    
+    await communicate.save(caminho)
+
 # =========================================================
 # IA
 # =========================================================
@@ -309,54 +269,55 @@ async def gerar_audio(texto, arquivo):
 @app.route("/perguntar", methods=["POST"])
 def perguntar():
 
+    data = request.get_json()
+
+    mensagem = (
+        data.get("mensagem", "")
+        .strip()
+    )
+
+    if not mensagem:
+
+        return jsonify({
+            "erro": "Mensagem vazia"
+        }), 400
+
+    session_id = "usuario"
+
+    with _lock:
+
+        session = _get_or_create(session_id)
+
+        historico = _history_for_api(session)
+
+    messages_for_api = [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        }
+    ]
+
+    messages_for_api.extend(historico)
+
+    messages_for_api.append({
+        "role": "user",
+        "content": mensagem
+    })
+
     try:
-
-        data = request.get_json()
-
-        mensagem = data.get(
-            "mensagem",
-            ""
-        ).strip()
-
-        if not mensagem:
-
-            return jsonify({
-                "erro": "Mensagem vazia"
-            }), 400
-
-        contexto_memoria = buscar_memorias()
-
-        messages_for_api = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "system",
-                "content":
-                    "Memórias recentes:\n\n"
-                    f"{contexto_memoria}"
-            },
-            {
-                "role": "user",
-                "content": mensagem
-            }
-        ]
-
-        logger.info(
-            "Pergunta recebida: %s",
-            mensagem
-        )
 
         response = requests.post(
             OPENROUTER_URL,
             headers={
                 "Authorization":
                     f"Bearer {OPENROUTER_API_KEY}",
+
                 "Content-Type":
                     "application/json",
+
                 "HTTP-Referer":
                     "http://localhost",
+
                 "X-Title":
                     "Sexta-Feira"
             },
@@ -391,6 +352,58 @@ def perguntar():
             texto
         )
 
+        # =====================================================
+        # LINKS
+        # =====================================================
+
+        link = None
+
+        texto_lower = texto.lower()
+
+        if "spotify" in mensagem.lower():
+
+            busca = (
+                mensagem.lower()
+                .replace("spotify", "")
+                .strip()
+            )
+
+            link = (
+                "https://open.spotify.com/search/"
+                + requests.utils.quote(busca)
+            )
+
+        elif (
+            "mapa" in mensagem.lower()
+            or "google maps" in mensagem.lower()
+        ):
+
+            link = (
+                "https://www.google.com/maps/search/"
+                + requests.utils.quote(mensagem)
+            )
+
+        elif "youtube" in mensagem.lower():
+
+            busca = (
+                mensagem.lower()
+                .replace("youtube", "")
+                .strip()
+            )
+
+            link = (
+                "https://www.youtube.com/results?search_query="
+                + requests.utils.quote(busca)
+            )
+
+        # =====================================================
+        # ÁUDIO
+        # =====================================================
+
+        if not os.path.exists("static"):
+
+            os.makedirs("static")
+
         audio_id = str(uuid.uuid4()) + ".mp3"
 
         audio_path = os.path.join(
@@ -411,17 +424,20 @@ def perguntar():
 
         return jsonify({
             "resposta": texto,
-            "audio": f"/static/{audio_id}"
+            "audio": f"/static/{audio_id}",
+            "abrir_link": link
         })
+
     except Exception as erro:
 
         logger.exception(
-            "Erro interno do servidor"
+            "Erro interno"
         )
 
         return jsonify({
             "erro":
                 "Erro interno do servidor",
+
             "detalhes":
                 str(erro)
         }), 500
@@ -436,30 +452,27 @@ def perguntar():
 )
 def historico():
 
-    session_id = request.args.get(
-        "session_id",
-        ""
-    ).strip()
+    session_id = (
+        request.args
+        .get("session_id", "")
+        .strip()
+    )
 
     if not session_id:
 
         return jsonify({
             "erro":
-                "Parâmetro session_id obrigatório"
+                "session_id obrigatório"
         }), 400
 
     with _lock:
 
-        session = _sessions.get(
-            session_id
-        )
+        session = _sessions.get(session_id)
 
         if not session:
 
             return jsonify({
-                "session_id": session_id,
-                "historico": [],
-                "total_mensagens": 0
+                "historico": []
             })
 
         msgs = list(session["messages"])
@@ -468,92 +481,6 @@ def historico():
         "session_id": session_id,
         "historico": msgs,
         "total_mensagens": len(msgs)
-    })
-
-# =========================================================
-# LIMPAR HISTÓRICO
-# =========================================================
-
-@app.route(
-    "/flask-api/limpar-historico",
-    methods=["POST"]
-)
-def limpar_historico():
-
-    dados = (
-        request.get_json(
-            silent=True
-        ) or {}
-    )
-
-    session_id = dados.get(
-        "session_id",
-        ""
-    ).strip()
-
-    if not session_id:
-
-        return jsonify({
-            "erro":
-                "Campo session_id obrigatório"
-        }), 400
-
-    with _lock:
-
-        session = _sessions.pop(
-            session_id,
-            None
-        )
-
-    removidas = (
-        len(session["messages"])
-        if session else 0
-    )
-
-    return jsonify({
-        "mensagens_removidas": removidas,
-        "mensagem": "Histórico apagado"
-    })
-
-# =========================================================
-# HEALTH
-# =========================================================
-
-@app.route(
-    HEALTHZ_PATH,
-    methods=["GET"]
-)
-def healthz():
-
-    now = _now()
-
-    uptime_secs = (
-        now - _server_start
-    ).total_seconds()
-
-    with _stats_lock:
-
-        req_count = _stats["request_count"]
-
-        avg_response_ms = 0
-
-        if req_count:
-
-            avg_response_ms = round(
-                _stats["total_response_ms"]
-                / req_count,
-                2
-            )
-
-    return jsonify({
-        "status": "ok",
-        "timestamp": _iso(now),
-        "uptime_segundos":
-            round(uptime_secs, 1),
-        "requests": req_count,
-        "tempo_medio_ms":
-            avg_response_ms,
-        "modelo": OPENROUTER_MODEL
     })
 
 # =========================================================
@@ -576,6 +503,67 @@ def ping():
     return {
         "pong": True
     }, 200
+
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.route(
+    HEALTHZ_PATH,
+    methods=["GET"]
+)
+def healthz():
+
+    now = _now()
+
+    uptime_secs = (
+        now - _server_start
+    ).total_seconds()
+
+    with _lock:
+
+        session_count = len(_sessions)
+
+        total_messages = sum(
+            len(s["messages"])
+            for s in _sessions.values()
+        )
+
+    with _stats_lock:
+
+        req_count = _stats["request_count"]
+
+        avg_response_ms = 0
+
+        if req_count:
+
+            avg_response_ms = round(
+                _stats["total_response_ms"]
+                / req_count,
+                2
+            )
+
+    return jsonify({
+        "status": "ok",
+        "timestamp": _iso(now),
+        "uptime_segundos":
+            round(uptime_secs, 1),
+
+        "sessoes_ativas":
+            session_count,
+
+        "mensagens":
+            total_messages,
+
+        "requests":
+            req_count,
+
+        "tempo_medio_ms":
+            avg_response_ms,
+
+        "modelo":
+            OPENROUTER_MODEL
+    })
 
 # =========================================================
 # ERROS
@@ -616,16 +604,12 @@ def server_error(e):
 if __name__ == "__main__":
 
     port = int(
-        os.environ.get(
-            "PORT",
-            5000
-        )
+        os.environ.get("PORT", 5000)
     )
 
     debug = (
-        os.environ.get(
-            "FLASK_ENV"
-        ) == "development"
+        os.environ.get("FLASK_ENV")
+        == "development"
     )
 
     if not OPENROUTER_API_KEY:
