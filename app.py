@@ -33,7 +33,7 @@ OPENROUTER_API_KEY = os.getenv(
 )
 
 OPENROUTER_MODEL = (
-    "mistralai/mistral-7b-instruct:free"
+    "qwen/qwen2.5-7b-instruct:free"
 )
 
 OPENROUTER_URL = (
