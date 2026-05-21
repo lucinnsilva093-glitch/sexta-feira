@@ -32,7 +32,9 @@ OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY"
 )
 
-OPENROUTER_MODEL = "openrouter/free"
+OPENROUTER_MODEL = (
+    "mistralai/mistral-7b-instruct:free"
+)
 
 OPENROUTER_URL = (
     "https://openrouter.ai/api/v1/chat/completions"
@@ -164,16 +166,6 @@ def _trim(session):
         session["messages"] = (
             session["messages"][-max_msgs:]
         )
-
-def _history_for_api(session):
-
-    return [
-        {
-            "role": m["role"],
-            "content": m["content"]
-        }
-        for m in session["messages"]
-    ]
 
 def _memory_bytes(session):
 
@@ -326,7 +318,9 @@ def perguntar():
 
         session = _get_or_create(session_id)
 
-        historico = _history_for_api(session)
+        historico = (
+            session["messages"][-4:]
+        )
 
     messages_for_api = [
         {
@@ -390,67 +384,66 @@ def perguntar():
             texto
         )
 
+        # =====================================================
+        # LINKS
+        # =====================================================
 
-    # =====================================================
-    # LINKS
-    # =====================================================
+        link = None
 
-    link = None
+        texto_lower = mensagem.lower()
 
-    texto_lower = texto.lower()
+        # ================= PLAYLIST FIXA =================
 
-    # ================= SPOTIFY PLAYLIST FIXA =================
+        if "tocar playlist" in texto_lower:
 
-    if "tocar playlist" in texto_lower:
-
-        link = (
-            "https://open.spotify.com/search/"
-            + requests.utils.quote(
-                "play do menosmenos"
+            link = (
+                "https://open.spotify.com/search/"
+                + requests.utils.quote(
+                    "play do menosmenos"
+                )
             )
-        )
 
-    # ================= SPOTIFY =================
+        # ================= SPOTIFY =================
 
-    elif "spotify" in texto_lower:
+        elif "spotify" in texto_lower:
 
-        busca = (
-            texto_lower
-            .replace("spotify", "")
-            .strip()
-        )
+            busca = (
+                texto_lower
+                .replace("spotify", "")
+                .strip()
+            )
 
-        link = (
-            "https://open.spotify.com/search/"
-            + requests.utils.quote(busca)
-        )
+            link = (
+                "https://open.spotify.com/search/"
+                + requests.utils.quote(busca)
+            )
 
-    # ================= MAPAS =================
+        # ================= MAPAS =================
 
-    elif (
-        "mapa" in texto_lower
-        or "google maps" in texto_lower
-    ):
+        elif (
+            "mapa" in texto_lower
+            or "google maps" in texto_lower
+        ):
 
-        link = (
-            "https://www.google.com/maps/search/"
-            + requests.utils.quote(texto)
-        )
+            link = (
+                "https://www.google.com/maps/search/"
+                + requests.utils.quote(mensagem)
+            )
 
-    # ================= YOUTUBE =================
+        # ================= YOUTUBE =================
 
-    elif "youtube" in texto_lower:
+        elif "youtube" in texto_lower:
 
-        busca = (
-            texto_lower
-            .replace("youtube", "")
-            .strip()
-        )
+            busca = (
+                texto_lower
+                .replace("youtube", "")
+                .strip()
+            )
 
-        link = (
-            "https://www.youtube.com/results?search_query="
-            + requests.utils.quote(busca)
-        )
+            link = (
+                "https://www.youtube.com/results?search_query="
+                + requests.utils.quote(busca)
+            )
 
         # =====================================================
         # ÁUDIO
