@@ -206,6 +206,24 @@
 
         let micAtivo = false;
 
+        let session_id =
+localStorage.getItem(
+"session_id"
+);
+
+if (!session_id) {
+
+session_id =
+"sessao_" +
+Math.random()
+.toString(36)
+.substring(2);
+
+localStorage.setItem(
+"session_id",
+session_id
+);
+}
         // ===================== RELÓGIO =====================
 
         function atualizarHora(){
@@ -253,7 +271,8 @@
         },
 
         body: JSON.stringify({
-        mensagem: texto
+        mensagem: texto,
+        session_id: session_id
         })
         });
 
