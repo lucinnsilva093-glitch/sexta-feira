@@ -1,608 +1,142 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<script>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Sexta-Feira</title>
+const API_URL =
+"https://sexta-feira-p8np.onrender.com/perguntar";
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Segoe UI, sans-serif;
-        }
+let recognition;
+let micAtivo = false;
 
-        body {
-            background: #01060d;
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            transition: background 1.5s ease;
-        }
+// ================= SESSION =================
 
-            body::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                background: radial-gradient( circle at center, rgba(0,255,255,.05), transparent 60% );
-                transition: all 1.5s ease;
-            }
-
-        /* ================= MODO ESPECIAL ================= */
-
-        .modo-especial {
-
-            background:
-            linear-gradient(
-            135deg,
-            #140018,
-            #2d004d,
-            #090011
-            );
-
-            background-size: 400% 400%;
-
-            animation:
-            fundoAnimado 15s ease infinite;
-
-        }
-
-        .modo-especial::before {
-
-            background:
-            radial-gradient(
-            circle at center,
-            rgba(255,0,255,.08),
-            transparent 60%
-            );
-
-        }
-
-        @keyframes fundoAnimado {
-
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .intro-box {
-
-            position: fixed;
-
-            top: 50%;
-            left: 50%;
-
-            transform:
-            translate(-50%, -50%);
-
-            text-align: center;
-
-            z-index: 9999;
-
-            animation:
-            fadeIntro 5s forwards;
-        }
-
-        .intro-title {
-
-            font-size: 14px;
-
-            letter-spacing: 4px;
-
-            opacity: 0.7;
-
-            color: #7eeeff;
-        }
-
-        .intro-name {
-
-            font-size: 40px;
-
-            margin-top: 10px;
-
-            font-weight: bold;
-
-            color: #9fefff;
-
-            text-shadow:
-            0 0 15px rgba(255,255,255,.25);
-
-        }
-
-        .intro-sync {
-
-            margin-top: 20px;
-
-            font-size: 16px;
-
-            opacity: 0.8;
-
-            color: #f2d9ff;
-        }
-
-        @keyframes fadeIntro {
-
-            0% {
-
-                opacity: 0;
-
-                transform:
-                translate(-50%, -50%)
-                scale(0.92);
-
-            }
-
-            15% {
-
-                opacity: 1;
-
-            }
-
-            85% {
-
-                opacity: 1;
-
-            }
-
-            100% {
-
-                opacity: 0;
-
-                transform:
-                translate(-50%, -50%)
-                scale(1.05);
-
-                pointer-events: none;
-            }
-        }
-
-        /* ================= RESTO ================= */
-
-        .logoArea {
-            position: absolute;
-            top: 40px;
-            left: 50px;
-        }
-
-        .logo {
-            font-size: 60px;
-            color: #00f7ff;
-            letter-spacing: 6px;
-            transition: color 1s ease;
-        }
-
-        .modo-especial .logo {
-
-            color: #ffb3ff;
-
-            text-shadow:
-            0 0 25px rgba(255,192,255,.4);
-
-        }
-
-        .sub {
-            margin-top: 10px;
-            color: #aaa;
-        }
-
-        .topClock {
-            position: absolute;
-            top: 40px;
-            right: 50px;
-            text-align: right;
-        }
-
-        .time {
-            font-size: 60px;
-            color: #00f7ff;
-            transition: color 1s ease;
-        }
-
-        .modo-especial .time {
-
-            color: #ffc8ff;
-
-        }
-
-        .date {
-            font-size: 18px;
-            color: #ccc;
-        }
-
-        .center {
-            position: absolute;
-            left: 50%;
-            top: 45%;
-            transform: translate(-50%, -50%);
-        }
-
-        .planet {
-            width: 350px;
-            height: 350px;
-            border-radius: 50%;
-            background: radial-gradient( circle, #9afcff, #0077aa );
-            transition: all 1.5s ease;
-        }
-
-        .modo-especial .planet {
-
-            background:
-            radial-gradient(
-            circle,
-            #ffc4ff,
-            #7b2cbf
-            );
-
-            box-shadow:
-            0 0 60px rgba(255,180,255,.2);
-
-        }
-
-        .ring {
-            position: absolute;
-            width: 650px;
-            height: 650px;
-            border-radius: 50%;
-            border: 18px solid rgba(0,255,255,0.35);
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) scaleY(0.28) rotate(-18deg);
-            box-shadow: 0 0 25px rgba(0,255,255,0.25);
-            z-index: -1;
-            transition: all 1.5s ease;
-        }
-
-        .modo-especial .ring {
-
-            border:
-            18px solid rgba(255,180,255,0.25);
-
-            box-shadow:
-            0 0 35px rgba(255,180,255,.2);
-
-        }
-
-        .chat {
-            position: absolute;
-            left: 50px;
-            bottom: 220px;
-            width: 500px;
-        }
-
-        .chatTitle {
-            color: #00f7ff;
-            margin-top: 10px;
-            transition: color 1s ease;
-        }
-
-        .modo-especial .chatTitle {
-
-            color: #ffb7ff;
-
-        }
-
-        .chatText {
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-
-        .inputArea {
-            position: absolute;
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-        }
-
-        input {
-            width: 600px;
-            height: 60px;
-            border-radius: 30px;
-            border: none;
-            padding: 0 20px;
-            font-size: 18px;
-            outline: none;
-        }
-
-        button {
-            width: 140px;
-            border-radius: 30px;
-            border: none;
-            background: #00f7ff;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 1s ease;
-        }
-
-        .modo-especial button {
-
-            background: #ffb3ff;
-
-            box-shadow:
-            0 0 20px rgba(255,180,255,.4);
-
-        }
-
-        .mic {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            color: #00f7ff;
-            cursor: pointer;
-            transition: color 1s ease;
-        }
-#introEspecial{
-
-position: fixed;
-inset: 0;
-
-background:
-radial-gradient(
-circle,
-rgba(0,120,255,.25),
-#01060d
-);
-
-display: flex;
-flex-direction: column;
-
-justify-content: center;
-align-items: center;
-
-font-size: 40px;
-font-weight: bold;
-
-color: #8fd3ff;
-
-z-index: 9999;
-
-backdrop-filter: blur(10px);
--webkit-backdrop-filter: blur(10px);
-
-transition: 1s;
-animation: aparecer 1s ease;
-}
-
-#introEspecial span{
-
-margin-top: 20px;
-font-size: 20px;
-color: #d6ecff;
-}
-
-@keyframes aparecer{
-
-from{
-opacity:0;
-transform:scale(1.1);
-}
-
-to{
-opacity:1;
-transform:scale(1);
-}
-}
-    </style>
-</head>
-
-<body>
-
-    <div id="introEspecial"></div>
-
-    <div class="logoArea">
-        <div class="logo">SEXTA-FEIRA</div>
-        <div class="sub">assistente online</div>
-    </div>
-
-    <div class="topClock">
-        <div class="time" id="hora">00:00:00</div>
-        <div class="date" id="data">carregando...</div>
-    </div>
-
-    <div class="center">
-        <div class="ring"></div>
-        <div class="planet"></div>
-    </div>
-
-    <div class="chat">
-        <div class="chatTitle">VOCÊ:</div>
-
-        <div class="chatText"
-             id="perguntaTexto">
-            ...
-        </div>
-
-        <div class="chatTitle">
-            SEXTA-FEIRA:
-        </div>
-
-        <div class="chatText"
-             id="resposta">
-            Sistema pronto.
-        </div>
-    </div>
-
-    <div class="inputArea">
-
-        <input id="pergunta"
-               placeholder="Digite ou fale algo...">
-
-        <button onclick="enviarPergunta()">
-            ENVIAR
-        </button>
-
-    </div>
-
-    <div class="mic"
-         onclick="toggleMic()">
-        🎙️ Falar
-    </div>
-
-    <script>
-
-        const API_URL =
-        "https://sexta-feira-p8np.onrender.com/perguntar";
-
-        let recognition;
-
-        let micAtivo = false;
-
-        let session_id =
-localStorage.getItem(
-"session_id"
-);
+let session_id =
+localStorage.getItem("session_id");
 
 if (!session_id) {
 
-session_id =
-"sessao_" +
-Math.random()
-.toString(36)
-.substring(2);
+    session_id =
+    "sessao_" +
+    Math.random()
+    .toString(36)
+    .substring(2);
 
-localStorage.setItem(
-"session_id",
-session_id
-);
+    localStorage.setItem(
+    "session_id",
+    session_id
+    );
 }
 
-        // ================= PERFIL ESPECIAL =================
+// ================= PERFIL ESPECIAL =================
 
 const sessaoEspecial =
 "sessao_lp2yvm3a7ff";
 
 if(session_id === sessaoEspecial){
 
-// muda título
-document.querySelector(".logo")
-.innerText = "SEXTA-FEIRA 💙";
+    // muda título
+    document.querySelector(".logo")
+    .innerText = "SEXTA-FEIRA 💙";
 
-// subtítulo
-document.querySelector(".sub")
-.innerText =
-"interface sincronizada";
+    // subtítulo
+    document.querySelector(".sub")
+    .innerText =
+    "interface sincronizada";
 
-// fundo azul mais vivo
-document.body.style.background =
-"linear-gradient(180deg,#020b1d,#001d3d)";
+    // fundo
+    document.body.style.background =
+    "linear-gradient(180deg,#020b1d,#001d3d)";
 
-// planeta
-document.querySelector(".planet")
-.style.background =
-"radial-gradient(circle,#9ed8ff,#0066ff)";
+    // planeta
+    document.querySelector(".planet")
+    .style.background =
+    "radial-gradient(circle,#9ed8ff,#0066ff)";
 
-// relógio
-document.querySelector(".time")
-.style.color = "#6ec6ff";
+    // relógio
+    document.querySelector(".time")
+    .style.color = "#6ec6ff";
 
-// resposta inicial
-document.getElementById("resposta")
-.innerText =
-"Oi princesa. Sistema conectado ✨";
+    // resposta inicial
+    document.getElementById("resposta")
+    .innerText =
+    "Oi princesa. Sistema conectado ✨";
 
-// animação de entrada
-const aviso =
-document.createElement("div");
+    // cria intro
+    const aviso =
+    document.createElement("div");
 
-aviso.innerHTML = `
-<div id="introEspecial">
-PERFIL DETECTADO<br>
-<span>Sincronizando interface...</span>
-</div>
-`;
+    aviso.id = "introEspecial";
 
-document.body.appendChild(aviso);
+    aviso.innerHTML = `
+        PERFIL DETECTADO
+        <span>Sincronizando interface...</span>
+    `;
 
-setTimeout(()=>{
+    document.body.appendChild(aviso);
 
-const tela =
-document.getElementById(
-"introEspecial"
-);
+    // fade
+    setTimeout(()=>{
 
-if(tela){
+        aviso.style.opacity = "0";
 
-tela.style.opacity = "0";
+    },3000);
+
+    // remove
+    setTimeout(()=>{
+
+        aviso.remove();
+
+    },4000);
 }
 
-},3000);
+// ================= RELÓGIO =================
 
-setTimeout(()=>{
+function atualizarHora(){
 
-const tela =
-document.getElementById(
-"introEspecial"
-);
+    const agora = new Date();
 
-if(tela){
+    document.getElementById(
+    "hora"
+    ).innerText =
+    agora.toLocaleTimeString("pt-BR");
 
-tela.remove();
-}
-
-},4000);
-        // ===================== RELÓGIO =====================
-
-        function atualizarHora(){
-
-        const agora = new Date();
-
-        document.getElementById(
-        "hora"
-        ).innerText = agora.toLocaleTimeString(
-        "pt-BR"
-        );
-
-        document.getElementById(
-        "data"
-        ).innerText = agora.toLocaleDateString(
-        "pt-BR",
-        {
+    document.getElementById(
+    "data"
+    ).innerText =
+    agora.toLocaleDateString(
+    "pt-BR",
+    {
         weekday:"long",
         day:"numeric",
         month:"long"
-        }
-        );
-        }
+    }
+    );
+}
 
-        setInterval(atualizarHora, 1000);
+setInterval(atualizarHora, 1000);
 
-        atualizarHora();
+atualizarHora();
 
-        // ===================== IA =====================
+// ================= IA =================
 
-        async function enviarTexto(texto){
+async function enviarTexto(texto){
 
-        document.getElementById(
-        "perguntaTexto"
-        ).innerText = texto;
+    document.getElementById(
+    "perguntaTexto"
+    ).innerText = texto;
 
-        try{
+    try{
 
         const res = await fetch(API_URL, {
 
-        method: "POST",
+            method: "POST",
 
-        headers: {
-        "Content-Type":"application/json"
-        },
+            headers: {
+                "Content-Type":"application/json"
+            },
 
-        body: JSON.stringify({
-        mensagem: texto,
-        session_id: session_id
-        })
+            body: JSON.stringify({
+                mensagem: texto,
+                session_id: session_id
+            })
         });
 
         const data = await res.json();
@@ -620,28 +154,25 @@ tela.remove();
 
         if(data.audio){
 
-        const audio = new Audio(
-        "https://sexta-feira-p8np.onrender.com"
-        + data.audio
-        );
+            const audio = new Audio(
+            "https://sexta-feira-p8np.onrender.com"
+            + data.audio
+            );
 
-        audio.play();
+            audio.play();
         }
 
         // ================= LINKS =================
 
         if(data.abrir_link){
 
-        const novaAba = window.open(
-        "",
-        "_blank"
-        );
-
-        novaAba.location.href =
-        data.abrir_link;
+            window.open(
+            data.abrir_link,
+            "_blank"
+            );
         }
 
-        } catch(err){
+    } catch(err){
 
         console.log(err);
 
@@ -649,57 +180,59 @@ tela.remove();
         "resposta"
         ).innerText =
         "Erro ao conectar com a IA.";
-        }
-        }
+    }
+}
 
-        // ===================== INPUT =====================
+// ================= INPUT =================
 
-        function enviarPergunta(){
+function enviarPergunta(){
 
-        const texto = document.getElementById(
-        "pergunta"
-        ).value;
+    const texto =
+    document.getElementById(
+    "pergunta"
+    ).value;
 
-        if(!texto) return;
+    if(!texto) return;
 
-        enviarTexto(texto);
+    enviarTexto(texto);
 
-        document.getElementById(
-        "pergunta"
-        ).value = "";
-        }
+    document.getElementById(
+    "pergunta"
+    ).value = "";
+}
 
-        // ENTER ENVIA
+// ENTER ENVIA
 
-        document.getElementById(
-        "pergunta"
-        ).addEventListener(
-        "keydown",
-        function(event){
+document.getElementById(
+"pergunta"
+).addEventListener(
+"keydown",
+function(event){
 
-        if(event.key === "Enter"){
+    if(event.key === "Enter"){
 
         enviarPergunta();
-        }
-        }
-        );
+    }
+}
+);
 
-        // ===================== MIC =====================
+// ================= MICROFONE =================
 
-        function toggleMic(){
+function toggleMic(){
 
-        if(!(
-        'webkitSpeechRecognition'
-        in window
-        )){
+    if(!(
+    'webkitSpeechRecognition'
+    in window
+    )){
+
         alert(
         "Seu navegador não suporta voz"
         );
 
         return;
-        }
+    }
 
-        if(!recognition){
+    if(!recognition){
 
         recognition =
         new webkitSpeechRecognition();
@@ -710,34 +243,39 @@ tela.remove();
 
         recognition.onresult = (event) => {
 
-        const texto =
-        event.results[
-        event.results.length - 1
-        ][0].transcript;
+            const texto =
+            event.results[
+            event.results.length - 1
+            ][0].transcript;
 
-        if(
-        texto.trim().length < 2
-        ) return;
+            if(
+            texto.trim().length < 2
+            ) return;
 
-        enviarTexto(texto);
+            enviarTexto(texto);
         };
-        }
+    }
 
-        if(!micAtivo){
+    if(!micAtivo){
 
         recognition.start();
 
         micAtivo = true;
 
-        } else {
+        document.querySelector(".mic")
+        .innerText =
+        "🔴 Ouvindo...";
+
+    } else {
 
         recognition.stop();
 
         micAtivo = false;
-        }
-        }
 
-    </script>
+        document.querySelector(".mic")
+        .innerText =
+        "🎙️ Falar";
+    }
+}
 
-</body>
-</html>
+</script>
