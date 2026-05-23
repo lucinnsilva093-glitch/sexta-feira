@@ -182,14 +182,11 @@ def salvar_memoria(
     resposta
 ):
 
-    session_id = (
-        data.get("session_id")
-        or "anonimo"
-    )
-
     with _lock:
 
-        session = _get_or_create(session_id)
+        session = _get_or_create(
+            session_id
+        )
 
         session["messages"].append({
             "role": "user",
@@ -311,6 +308,10 @@ def perguntar():
     mensagem = (
         data.get("mensagem", "")
         .strip()
+    )
+    session_id = (
+    data.get("session_id")
+    or "anonimo"
     )
 
     if not mensagem:
