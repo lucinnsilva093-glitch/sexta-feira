@@ -527,20 +527,31 @@ document.body.appendChild(aviso);
 
 setTimeout(()=>{
 
+const tela =
 document.getElementById(
 "introEspecial"
-).style.opacity = "0";
+);
+
+if(tela){
+
+tela.style.opacity = "0";
+}
 
 },3000);
 
 setTimeout(()=>{
 
+const tela =
 document.getElementById(
 "introEspecial"
-).remove();
+);
+
+if(tela){
+
+tela.remove();
+}
 
 },4000);
-}
         // ===================== RELÓGIO =====================
 
         function atualizarHora(){
