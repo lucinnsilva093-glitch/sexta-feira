@@ -178,7 +178,10 @@ def _memory_bytes(session):
 
 def salvar_memoria(pergunta, resposta):
 
-    session_id = "usuario"
+    session_id = (
+        data.get("session_id")
+        or "anonimo"
+    )
 
     with _lock:
 
