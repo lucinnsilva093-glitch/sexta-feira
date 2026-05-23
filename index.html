@@ -1,281 +1,784 @@
-<script>
+<!DOCTYPE html>
+<html lang="pt-br">
 
-const API_URL =
-"https://sexta-feira-p8np.onrender.com/perguntar";
+<head>
 
-let recognition;
-let micAtivo = false;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-// ================= SESSION =================
+    <title>Sexta-Feira</title>
 
-let session_id =
-localStorage.getItem("session_id");
+    <style>
 
-if (!session_id) {
-
-    session_id =
-    "sessao_" +
-    Math.random()
-    .toString(36)
-    .substring(2);
-
-    localStorage.setItem(
-    "session_id",
-    session_id
-    );
-}
-
-// ================= PERFIL ESPECIAL =================
-
-const sessaoEspecial =
-"sessao_lp2yvm3a7ff";
-
-if(session_id === sessaoEspecial){
-
-    // muda título
-    document.querySelector(".logo")
-    .innerText = "SEXTA-FEIRA 💙";
-
-    // subtítulo
-    document.querySelector(".sub")
-    .innerText =
-    "interface sincronizada";
-
-    // fundo
-    document.body.style.background =
-    "linear-gradient(180deg,#020b1d,#001d3d)";
-
-    // planeta
-    document.querySelector(".planet")
-    .style.background =
-    "radial-gradient(circle,#9ed8ff,#0066ff)";
-
-    // relógio
-    document.querySelector(".time")
-    .style.color = "#6ec6ff";
-
-    // resposta inicial
-    document.getElementById("resposta")
-    .innerText =
-    "Oi princesa. Sistema conectado ✨";
-
-    // cria intro
-    const aviso =
-    document.createElement("div");
-
-    aviso.id = "introEspecial";
-
-    aviso.innerHTML = `
-        PERFIL DETECTADO
-        <span>Sincronizando interface...</span>
-    `;
-
-    document.body.appendChild(aviso);
-
-    // fade
-    setTimeout(()=>{
-
-        aviso.style.opacity = "0";
-
-    },3000);
-
-    // remove
-    setTimeout(()=>{
-
-        aviso.remove();
-
-    },4000);
-}
-
-// ================= RELÓGIO =================
-
-function atualizarHora(){
-
-    const agora = new Date();
-
-    document.getElementById(
-    "hora"
-    ).innerText =
-    agora.toLocaleTimeString("pt-BR");
-
-    document.getElementById(
-    "data"
-    ).innerText =
-    agora.toLocaleDateString(
-    "pt-BR",
-    {
-        weekday:"long",
-        day:"numeric",
-        month:"long"
-    }
-    );
-}
-
-setInterval(atualizarHora, 1000);
-
-atualizarHora();
-
-// ================= IA =================
-
-async function enviarTexto(texto){
-
-    document.getElementById(
-    "perguntaTexto"
-    ).innerText = texto;
-
-    try{
-
-        const res = await fetch(API_URL, {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type":"application/json"
-            },
-
-            body: JSON.stringify({
-                mensagem: texto,
-                session_id: session_id
-            })
-        });
-
-        const data = await res.json();
-
-        console.log(data);
-
-        const resposta =
-        data.resposta || "Erro na resposta";
-
-        document.getElementById(
-        "resposta"
-        ).innerText = resposta;
-
-        // ================= ÁUDIO =================
-
-        if(data.audio){
-
-            const audio = new Audio(
-            "https://sexta-feira-p8np.onrender.com"
-            + data.audio
-            );
-
-            audio.play();
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Segoe UI,sans-serif;
         }
 
-        // ================= LINKS =================
+        body{
 
-        if(data.abrir_link){
+            background:#01060d;
+            color:white;
 
-            window.open(
-            data.abrir_link,
-            "_blank"
-            );
+            overflow:hidden;
+
+            width:100vw;
+            height:100vh;
+
+            transition:1.5s ease;
         }
 
-    } catch(err){
+        body::before{
 
-        console.log(err);
+            content:"";
 
-        document.getElementById(
-        "resposta"
-        ).innerText =
-        "Erro ao conectar com a IA.";
-    }
-}
+            position:absolute;
+            inset:0;
 
-// ================= INPUT =================
+            background:
+            radial-gradient(
+            circle at center,
+            rgba(0,255,255,.05),
+            transparent 60%
+            );
 
-function enviarPergunta(){
+            pointer-events:none;
+        }
 
-    const texto =
-    document.getElementById(
-    "pergunta"
-    ).value;
+        /* ================= LOGO ================= */
 
-    if(!texto) return;
+        .logoArea{
 
-    enviarTexto(texto);
+            position:absolute;
 
-    document.getElementById(
-    "pergunta"
-    ).value = "";
-}
+            top:40px;
+            left:40px;
 
-// ENTER ENVIA
+            z-index:5;
+        }
 
-document.getElementById(
-"pergunta"
-).addEventListener(
-"keydown",
-function(event){
+        .logo{
 
-    if(event.key === "Enter"){
+            font-size:50px;
 
-        enviarPergunta();
-    }
-}
-);
+            letter-spacing:5px;
 
-// ================= MICROFONE =================
+            color:#00f7ff;
+        }
 
-function toggleMic(){
+        .sub{
 
-    if(!(
-    'webkitSpeechRecognition'
-    in window
-    )){
+            margin-top:10px;
 
-        alert(
-        "Seu navegador não suporta voz"
+            color:#aaa;
+
+            font-size:18px;
+        }
+
+        /* ================= RELÓGIO ================= */
+
+        .topClock{
+
+            position:absolute;
+
+            right:40px;
+            top:40px;
+
+            text-align:right;
+
+            z-index:5;
+        }
+
+        .time{
+
+            font-size:55px;
+
+            color:#00f7ff;
+        }
+
+        .date{
+
+            margin-top:5px;
+
+            color:#bbb;
+
+            font-size:18px;
+        }
+
+        /* ================= CENTRO ================= */
+
+        .center{
+
+            position:absolute;
+
+            left:50%;
+            top:45%;
+
+            transform:
+            translate(-50%,-50%);
+        }
+
+        .planet{
+
+            width:300px;
+            height:300px;
+
+            border-radius:50%;
+
+            background:
+            radial-gradient(
+            circle,
+            #9afcff,
+            #0077aa
+            );
+
+            box-shadow:
+            0 0 60px rgba(0,255,255,.15);
+        }
+
+        .ring{
+
+            position:absolute;
+
+            width:600px;
+            height:600px;
+
+            border-radius:50%;
+
+            border:16px solid rgba(0,255,255,.25);
+
+            left:50%;
+            top:50%;
+
+            transform:
+            translate(-50%,-50%)
+            scaleY(.28)
+            rotate(-18deg);
+
+            box-shadow:
+            0 0 25px rgba(0,255,255,.25);
+
+            z-index:-1;
+        }
+
+        /* ================= CHAT ================= */
+
+        .chat{
+
+            position:absolute;
+
+            left:40px;
+            bottom:210px;
+
+            width:500px;
+
+            z-index:5;
+        }
+
+        .chatTitle{
+
+            color:#00f7ff;
+
+            margin-top:15px;
+
+            font-size:18px;
+        }
+
+        .chatText{
+
+            margin-top:8px;
+
+            font-size:20px;
+
+            color:#fff;
+        }
+
+        /* ================= INPUT ================= */
+
+        .inputArea{
+
+            position:absolute;
+
+            bottom:110px;
+            left:50%;
+
+            transform:translateX(-50%);
+
+            display:flex;
+
+            gap:10px;
+
+            z-index:5;
+        }
+
+        input{
+
+            width:600px;
+            height:60px;
+
+            border:none;
+
+            border-radius:30px;
+
+            padding:0 20px;
+
+            outline:none;
+
+            font-size:18px;
+
+            background:#ffffff;
+        }
+
+        button{
+
+            width:140px;
+
+            border:none;
+
+            border-radius:30px;
+
+            background:#00f7ff;
+
+            font-weight:bold;
+
+            cursor:pointer;
+
+            transition:.3s;
+        }
+
+        button:hover{
+
+            transform:scale(1.05);
+        }
+
+        /* ================= MICROFONE ================= */
+
+        .mic{
+
+            position:absolute;
+
+            bottom:40px;
+            left:50%;
+
+            transform:translateX(-50%);
+
+            color:#00f7ff;
+
+            cursor:pointer;
+
+            font-size:20px;
+
+            z-index:5;
+        }
+
+        /* ================= INTRO ================= */
+
+        #introEspecial{
+
+            position:fixed;
+            inset:0;
+
+            background:
+            radial-gradient(
+            circle,
+            rgba(0,120,255,.25),
+            #01060d
+            );
+
+            display:flex;
+            flex-direction:column;
+
+            justify-content:center;
+            align-items:center;
+
+            font-size:42px;
+            font-weight:bold;
+
+            color:#8fd3ff;
+
+            z-index:9999;
+
+            backdrop-filter:blur(10px);
+            -webkit-backdrop-filter:blur(10px);
+
+            animation:aparecer 1s ease;
+        }
+
+        #introEspecial span{
+
+            margin-top:20px;
+
+            font-size:20px;
+
+            color:#d6ecff;
+        }
+
+        @keyframes aparecer{
+
+            from{
+
+                opacity:0;
+
+                transform:scale(1.1);
+            }
+
+            to{
+
+                opacity:1;
+
+                transform:scale(1);
+            }
+        }
+
+        /* ================= MOBILE ================= */
+
+        @media(max-width:768px){
+
+            .logo{
+
+                font-size:30px;
+            }
+
+            .time{
+
+                font-size:35px;
+            }
+
+            .planet{
+
+                width:180px;
+                height:180px;
+            }
+
+            .ring{
+
+                width:380px;
+                height:380px;
+            }
+
+            .chat{
+
+                width:90%;
+
+                left:20px;
+
+                bottom:220px;
+            }
+
+            .inputArea{
+
+                width:95%;
+            }
+
+            input{
+
+                width:100%;
+            }
+
+            button{
+
+                width:120px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- LOGO -->
+
+    <div class="logoArea">
+
+        <div class="logo">
+            SEXTA-FEIRA
+        </div>
+
+        <div class="sub">
+            assistente online
+        </div>
+
+    </div>
+
+    <!-- RELÓGIO -->
+
+    <div class="topClock">
+
+        <div class="time" id="hora">
+            00:00:00
+        </div>
+
+        <div class="date" id="data">
+            carregando...
+        </div>
+
+    </div>
+
+    <!-- CENTRO -->
+
+    <div class="center">
+
+        <div class="ring"></div>
+
+        <div class="planet"></div>
+
+    </div>
+
+    <!-- CHAT -->
+
+    <div class="chat">
+
+        <div class="chatTitle">
+            VOCÊ:
+        </div>
+
+        <div class="chatText"
+             id="perguntaTexto">
+
+            ...
+
+        </div>
+
+        <div class="chatTitle">
+            SEXTA-FEIRA:
+        </div>
+
+        <div class="chatText"
+             id="resposta">
+
+            Sistema pronto.
+
+        </div>
+
+    </div>
+
+    <!-- INPUT -->
+
+    <div class="inputArea">
+
+        <input
+        id="pergunta"
+        placeholder="Digite ou fale algo...">
+
+        <button onclick="enviarPergunta()">
+            ENVIAR
+        </button>
+
+    </div>
+
+    <!-- MIC -->
+
+    <div class="mic"
+         onclick="toggleMic()">
+
+        🎙️ Falar
+
+    </div>
+
+    <!-- SCRIPT -->
+
+    <script>
+
+        const API_URL =
+        "https://sexta-feira-p8np.onrender.com/perguntar";
+
+        let recognition;
+
+        let micAtivo = false;
+
+        // ================= SESSION =================
+
+        let session_id =
+        localStorage.getItem(
+        "session_id"
         );
 
-        return;
-    }
+        if(!session_id){
 
-    if(!recognition){
+            session_id =
+            "sessao_" +
+            Math.random()
+            .toString(36)
+            .substring(2);
 
-        recognition =
-        new webkitSpeechRecognition();
+            localStorage.setItem(
+            "session_id",
+            session_id
+            );
+        }
 
-        recognition.lang = "pt-BR";
+        // ================= PERFIL ESPECIAL =================
 
-        recognition.continuous = true;
+        const sessaoEspecial =
+        "sessao_lp2yvm3a7ff";
 
-        recognition.onresult = (event) => {
+        if(session_id === sessaoEspecial){
+
+            document.querySelector(".logo")
+            .innerText =
+            "SEXTA-FEIRA 💙";
+
+            document.querySelector(".sub")
+            .innerText =
+            "interface sincronizada";
+
+            document.body.style.background =
+            "linear-gradient(180deg,#020b1d,#001d3d)";
+
+            document.querySelector(".planet")
+            .style.background =
+            "radial-gradient(circle,#9ed8ff,#0066ff)";
+
+            document.querySelector(".time")
+            .style.color =
+            "#6ec6ff";
+
+            document.getElementById(
+            "resposta"
+            ).innerText =
+            "Oi princesa. Sistema conectado ✨";
+
+            const aviso =
+            document.createElement("div");
+
+            aviso.id =
+            "introEspecial";
+
+            aviso.innerHTML = `
+                PERFIL DETECTADO
+                <span>Sincronizando interface...</span>
+            `;
+
+            document.body.appendChild(
+            aviso
+            );
+
+            setTimeout(()=>{
+
+                aviso.style.opacity =
+                "0";
+
+            },3000);
+
+            setTimeout(()=>{
+
+                aviso.remove();
+
+            },4000);
+        }
+
+        // ================= RELÓGIO =================
+
+        function atualizarHora(){
+
+            const agora =
+            new Date();
+
+            document.getElementById(
+            "hora"
+            ).innerText =
+            agora.toLocaleTimeString(
+            "pt-BR"
+            );
+
+            document.getElementById(
+            "data"
+            ).innerText =
+            agora.toLocaleDateString(
+            "pt-BR",
+            {
+                weekday:"long",
+                day:"numeric",
+                month:"long"
+            }
+            );
+        }
+
+        setInterval(
+        atualizarHora,
+        1000
+        );
+
+        atualizarHora();
+
+        // ================= IA =================
+
+        async function enviarTexto(texto){
+
+            document.getElementById(
+            "perguntaTexto"
+            ).innerText =
+            texto;
+
+            try{
+
+                const res =
+                await fetch(API_URL,{
+
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
+
+                    body:JSON.stringify({
+
+                        mensagem:texto,
+
+                        session_id:session_id
+                    })
+                });
+
+                const data =
+                await res.json();
+
+                console.log(data);
+
+                const resposta =
+                data.resposta ||
+                "Erro na resposta";
+
+                document.getElementById(
+                "resposta"
+                ).innerText =
+                resposta;
+
+                // ÁUDIO
+
+                if(data.audio){
+
+                    const audio =
+                    new Audio(
+                    "https://sexta-feira-p8np.onrender.com"
+                    + data.audio
+                    );
+
+                    audio.play();
+                }
+
+                // LINKS
+
+                if(data.abrir_link){
+
+                    window.open(
+                    data.abrir_link,
+                    "_blank"
+                    );
+                }
+
+            } catch(err){
+
+                console.log(err);
+
+                document.getElementById(
+                "resposta"
+                ).innerText =
+                "Erro ao conectar com a IA.";
+            }
+        }
+
+        // ================= INPUT =================
+
+        function enviarPergunta(){
 
             const texto =
-            event.results[
-            event.results.length - 1
-            ][0].transcript;
+            document.getElementById(
+            "pergunta"
+            ).value;
 
-            if(
-            texto.trim().length < 2
-            ) return;
+            if(!texto) return;
 
             enviarTexto(texto);
-        };
-    }
 
-    if(!micAtivo){
+            document.getElementById(
+            "pergunta"
+            ).value = "";
+        }
 
-        recognition.start();
+        document.getElementById(
+        "pergunta"
+        ).addEventListener(
+        "keydown",
+        function(event){
 
-        micAtivo = true;
+            if(event.key === "Enter"){
 
-        document.querySelector(".mic")
-        .innerText =
-        "🔴 Ouvindo...";
+                enviarPergunta();
+            }
+        });
 
-    } else {
+        // ================= MIC =================
 
-        recognition.stop();
+        function toggleMic(){
 
-        micAtivo = false;
+            if(!(
+            'webkitSpeechRecognition'
+            in window
+            )){
 
-        document.querySelector(".mic")
-        .innerText =
-        "🎙️ Falar";
-    }
-}
+                alert(
+                "Seu navegador não suporta voz"
+                );
 
-</script>
+                return;
+            }
+
+            if(!recognition){
+
+                recognition =
+                new webkitSpeechRecognition();
+
+                recognition.lang =
+                "pt-BR";
+
+                recognition.continuous =
+                true;
+
+                recognition.onresult =
+                (event)=>{
+
+                    const texto =
+                    event.results[
+                    event.results.length - 1
+                    ][0].transcript;
+
+                    if(
+                    texto.trim().length < 2
+                    ) return;
+
+                    enviarTexto(texto);
+                };
+            }
+
+            if(!micAtivo){
+
+                recognition.start();
+
+                micAtivo = true;
+
+                document.querySelector(
+                ".mic"
+                ).innerText =
+                "🔴 Ouvindo...";
+
+            } else {
+
+                recognition.stop();
+
+                micAtivo = false;
+
+                document.querySelector(
+                ".mic"
+                ).innerText =
+                "🎙️ Falar";
+            }
+        }
+
+    </script>
+
+</body>
+</html>
