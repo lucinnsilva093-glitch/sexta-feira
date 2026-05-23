@@ -344,12 +344,56 @@
             cursor: pointer;
             transition: color 1s ease;
         }
+#introEspecial{
 
-        .modo-especial .mic {
+position: fixed;
+inset: 0;
 
-            color: #ffc4ff;
+background:
+radial-gradient(
+circle,
+rgba(0,120,255,.25),
+#01060d
+);
 
-        }
+display: flex;
+flex-direction: column;
+
+justify-content: center;
+align-items: center;
+
+font-size: 40px;
+font-weight: bold;
+
+color: #8fd3ff;
+
+z-index: 9999;
+
+backdrop-filter: blur(10px);
+
+transition: 1s;
+animation: aparecer 1s ease;
+}
+
+#introEspecial span{
+
+margin-top: 20px;
+font-size: 20px;
+color: #d6ecff;
+}
+
+@keyframes aparecer{
+
+from{
+opacity:0;
+transform:scale(1.1);
+}
+
+to{
+opacity:1;
+transform:scale(1);
+}
+}
     </style>
 </head>
 
@@ -434,46 +478,69 @@ session_id
 );
 }
 
-        // ================= MODO ESPECIAL =================
+        // ================= PERFIL ESPECIAL =================
 
-        const SESSION_ESPECIAL =
-        "sessao_lp2yvm3a7ff";
+const sessaoEspecial =
+"sessao_lp2yvm3a7ff";
 
-        const perfilEspecial =
+if(session_id === sessaoEspecial){
 
-        session_id ===
-        SESSION_ESPECIAL;
+// muda título
+document.querySelector(".logo")
+.innerText = "SEXTA-FEIRA 💙";
 
-        if (perfilEspecial) {
+// subtítulo
+document.querySelector(".sub")
+.innerText =
+"interface sincronizada";
 
-        document.body.classList.add(
-        "modo-especial"
-        );
+// fundo azul mais vivo
+document.body.style.background =
+"linear-gradient(180deg,#020b1d,#001d3d)";
 
-        document.getElementById(
-        "introEspecial"
-        ).innerHTML = `
+// planeta
+document.querySelector(".planet")
+.style.background =
+"radial-gradient(circle,#9ed8ff,#0066ff)";
 
-        <div class="intro-box">
+// relógio
+document.querySelector(".time")
+.style.color = "#6ec6ff";
 
-            <div class="intro-title">
-            PERFIL DETECTADO
-            </div>
+// resposta inicial
+document.getElementById("resposta")
+.innerText =
+"Oi princesa. Sistema conectado ✨";
 
-            <div class="intro-name">
-            [ USUÁRIA ESPECIAL ]
-            </div>
+// animação de entrada
+const aviso =
+document.createElement("div");
 
-            <div class="intro-sync">
-            Sincronizando interface...
-            </div>
+aviso.innerHTML = `
+<div id="introEspecial">
+PERFIL DETECTADO<br>
+<span>Sincronizando interface...</span>
+</div>
+`;
 
-        </div>
+document.body.appendChild(aviso);
 
-        `;
+setTimeout(()=>{
 
-        }
+document.getElementById(
+"introEspecial"
+).style.opacity = "0";
 
+},3000);
+
+setTimeout(()=>{
+
+document.getElementById(
+"introEspecial"
+).remove();
+
+},4000);
+}
         // ===================== RELÓGIO =====================
 
         function atualizarHora(){
