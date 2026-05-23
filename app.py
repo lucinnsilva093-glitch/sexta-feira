@@ -176,7 +176,11 @@ def _memory_bytes(session):
         ).encode("utf-8")
     )
 
-def salvar_memoria(pergunta, resposta):
+def salvar_memoria(
+    session_id,
+    pergunta,
+    resposta
+):
 
     session_id = (
         data.get("session_id")
