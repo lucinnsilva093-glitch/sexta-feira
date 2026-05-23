@@ -387,6 +387,7 @@ def perguntar():
         )
 
         salvar_memoria(
+            session_id,
             mensagem,
             texto
         )
