@@ -313,6 +313,18 @@ def perguntar():
     data.get("session_id")
     or "anonimo"
     )
+    print(f"""
+
+====================
+
+NOVA SESSÃO DETECTADA
+
+ID:
+{session_id}
+
+====================
+
+""")
 
     if not mensagem:
 
