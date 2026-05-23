@@ -19,6 +19,7 @@
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            transition: background 1.5s ease;
         }
 
             body::before {
@@ -26,7 +27,146 @@
                 position: absolute;
                 inset: 0;
                 background: radial-gradient( circle at center, rgba(0,255,255,.05), transparent 60% );
+                transition: all 1.5s ease;
             }
+
+        /* ================= MODO ESPECIAL ================= */
+
+        .modo-especial {
+
+            background:
+            linear-gradient(
+            135deg,
+            #140018,
+            #2d004d,
+            #090011
+            );
+
+            background-size: 400% 400%;
+
+            animation:
+            fundoAnimado 15s ease infinite;
+
+        }
+
+        .modo-especial::before {
+
+            background:
+            radial-gradient(
+            circle at center,
+            rgba(255,0,255,.08),
+            transparent 60%
+            );
+
+        }
+
+        @keyframes fundoAnimado {
+
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .intro-box {
+
+            position: fixed;
+
+            top: 50%;
+            left: 50%;
+
+            transform:
+            translate(-50%, -50%);
+
+            text-align: center;
+
+            z-index: 9999;
+
+            animation:
+            fadeIntro 5s forwards;
+        }
+
+        .intro-title {
+
+            font-size: 14px;
+
+            letter-spacing: 4px;
+
+            opacity: 0.7;
+
+            color: #ffcfff;
+        }
+
+        .intro-name {
+
+            font-size: 40px;
+
+            margin-top: 10px;
+
+            font-weight: bold;
+
+            color: #ffd6ff;
+
+            text-shadow:
+            0 0 15px rgba(255,255,255,.25);
+
+        }
+
+        .intro-sync {
+
+            margin-top: 20px;
+
+            font-size: 16px;
+
+            opacity: 0.8;
+
+            color: #f2d9ff;
+        }
+
+        @keyframes fadeIntro {
+
+            0% {
+
+                opacity: 0;
+
+                transform:
+                translate(-50%, -50%)
+                scale(0.92);
+
+            }
+
+            15% {
+
+                opacity: 1;
+
+            }
+
+            85% {
+
+                opacity: 1;
+
+            }
+
+            100% {
+
+                opacity: 0;
+
+                transform:
+                translate(-50%, -50%)
+                scale(1.05);
+
+                pointer-events: none;
+            }
+        }
+
+        /* ================= RESTO ================= */
 
         .logoArea {
             position: absolute;
@@ -38,6 +178,16 @@
             font-size: 60px;
             color: #00f7ff;
             letter-spacing: 6px;
+            transition: color 1s ease;
+        }
+
+        .modo-especial .logo {
+
+            color: #ffb3ff;
+
+            text-shadow:
+            0 0 25px rgba(255,192,255,.4);
+
         }
 
         .sub {
@@ -55,6 +205,13 @@
         .time {
             font-size: 60px;
             color: #00f7ff;
+            transition: color 1s ease;
+        }
+
+        .modo-especial .time {
+
+            color: #ffc8ff;
+
         }
 
         .date {
@@ -74,6 +231,21 @@
             height: 350px;
             border-radius: 50%;
             background: radial-gradient( circle, #9afcff, #0077aa );
+            transition: all 1.5s ease;
+        }
+
+        .modo-especial .planet {
+
+            background:
+            radial-gradient(
+            circle,
+            #ffc4ff,
+            #7b2cbf
+            );
+
+            box-shadow:
+            0 0 60px rgba(255,180,255,.2);
+
         }
 
         .ring {
@@ -87,6 +259,17 @@
             transform: translate(-50%, -50%) scaleY(0.28) rotate(-18deg);
             box-shadow: 0 0 25px rgba(0,255,255,0.25);
             z-index: -1;
+            transition: all 1.5s ease;
+        }
+
+        .modo-especial .ring {
+
+            border:
+            18px solid rgba(255,180,255,0.25);
+
+            box-shadow:
+            0 0 35px rgba(255,180,255,.2);
+
         }
 
         .chat {
@@ -99,6 +282,13 @@
         .chatTitle {
             color: #00f7ff;
             margin-top: 10px;
+            transition: color 1s ease;
+        }
+
+        .modo-especial .chatTitle {
+
+            color: #ffb7ff;
+
         }
 
         .chatText {
@@ -132,6 +322,16 @@
             background: #00f7ff;
             cursor: pointer;
             font-weight: bold;
+            transition: all 1s ease;
+        }
+
+        .modo-especial button {
+
+            background: #ffb3ff;
+
+            box-shadow:
+            0 0 20px rgba(255,180,255,.4);
+
         }
 
         .mic {
@@ -142,11 +342,20 @@
             font-size: 18px;
             color: #00f7ff;
             cursor: pointer;
+            transition: color 1s ease;
+        }
+
+        .modo-especial .mic {
+
+            color: #ffc4ff;
+
         }
     </style>
 </head>
 
 <body>
+
+    <div id="introEspecial"></div>
 
     <div class="logoArea">
         <div class="logo">SEXTA-FEIRA</div>
@@ -224,6 +433,47 @@ localStorage.setItem(
 session_id
 );
 }
+
+        // ================= MODO ESPECIAL =================
+
+        const SESSION_ESPECIAL =
+        "sessao_5letg901h5b";
+
+        const perfilEspecial =
+
+        session_id ===
+        SESSION_ESPECIAL;
+
+        if (perfilEspecial) {
+
+        document.body.classList.add(
+        "modo-especial"
+        );
+
+        document.getElementById(
+        "introEspecial"
+        ).innerHTML = `
+
+        <div class="intro-box">
+
+            <div class="intro-title">
+            PERFIL DETECTADO
+            </div>
+
+            <div class="intro-name">
+            [ USUÁRIA ESPECIAL ]
+            </div>
+
+            <div class="intro-sync">
+            Sincronizando interface...
+            </div>
+
+        </div>
+
+        `;
+
+        }
+
         // ===================== RELÓGIO =====================
 
         function atualizarHora(){
@@ -299,19 +549,19 @@ session_id
         audio.play();
         }
 
-// ================= LINKS =================
+        // ================= LINKS =================
 
-if(data.abrir_link){
+        if(data.abrir_link){
 
-    const novaAba = window.open(
+        const novaAba = window.open(
         "",
         "_blank"
-    );
+        );
 
-    novaAba.location.href =
+        novaAba.location.href =
         data.abrir_link;
-}
-            
+        }
+
         } catch(err){
 
         console.log(err);
