@@ -413,7 +413,6 @@ ID:
             "erro": "Mensagem vazia"
         }), 400
 
-    session_id = "usuario"
 
     with _lock:
 
