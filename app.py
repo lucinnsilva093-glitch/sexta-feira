@@ -221,21 +221,24 @@ def salvar_memoria(
         _touch(session)
 
         _trim(session)
-        
 
-if session_id not in dados:
+        # SALVAR NO JSON
 
-    dados[session_id] = {
-        "messages": []
-    }
+        dados = carregar_usuarios()
 
-dados[session_id]["messages"] = (
-    session["messages"]
-)
+        if session_id not in dados:
 
-salvar_usuarios_json(
-    dados
-)
+            dados[session_id] = {
+                "messages": []
+            }
+
+        dados[session_id]["messages"] = (
+            session["messages"]
+        )
+
+        salvar_usuarios_json(
+            dados
+        )
 
 def carregar_usuarios():
 
