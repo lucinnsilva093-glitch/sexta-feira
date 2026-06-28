@@ -143,34 +143,34 @@ def _iso(dt):
 
 def _get_or_create(session_id):
 
-if session_id not in _sessions:
+    if session_id not in _sessions:
 
-    dados = carregar_usuarios()
+        dados = carregar_usuarios()
 
-    ts = _now()
+        ts = _now()
 
-    if session_id in dados:
+        if session_id in dados:
 
-        _sessions[session_id] = {
-            "messages":
-                dados[session_id].get(
-                    "messages",
-                    []
-                ),
-            "created_at": ts,
-            "last_activity": ts,
-        }
+            _sessions[session_id] = {
+                "messages":
+                    dados[session_id].get(
+                        "messages",
+                        []
+                    ),
+                "created_at": ts,
+                "last_activity": ts,
+            }
 
-    else:
+        else:
 
-        _sessions[session_id] = {
-            "messages": [],
-            "created_at": ts,
-            "last_activity": ts,
-        }
+            _sessions[session_id] = {
+                "messages": [],
+                "created_at": ts,
+                "last_activity": ts,
+            }
 
     return _sessions[session_id]
-
+    
 def _touch(session):
 
     session["last_activity"] = _now()
