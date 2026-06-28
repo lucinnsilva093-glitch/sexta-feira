@@ -56,6 +56,8 @@ SEARCH_MAX_LIMIT = 100
 
 CONTEXT_CHARS = 80
 
+ARQUIVO_USUARIOS = "usuarios.json"
+
 SYSTEM_PROMPT = """
 Você é Sexta-Feira,
 uma inteligência artificial avançada,
@@ -141,9 +143,25 @@ def _iso(dt):
 
 def _get_or_create(session_id):
 
-    if session_id not in _sessions:
+if session_id not in _sessions:
 
-        ts = _now()
+    dados = carregar_usuarios()
+
+    ts = _now()
+
+    if session_id in dados:
+
+        _sessions[session_id] = {
+            "messages":
+                dados[session_id].get(
+                    "messages",
+                    []
+                ),
+            "created_at": ts,
+            "last_activity": ts,
+        }
+
+    else:
 
         _sessions[session_id] = {
             "messages": [],
@@ -203,7 +221,67 @@ def salvar_memoria(
         _touch(session)
 
         _trim(session)
+        
+dados = carregar_usuarios()
 
+if session_id not in dados:
+
+    dados[session_id] = {
+        "messages": []
+    }
+
+dados[session_id]["messages"] = (
+    session["messages"]
+)
+
+salvar_usuarios_json(
+    dados
+)
+
+def carregar_usuarios():
+
+    if not os.path.exists(
+        ARQUIVO_USUARIOS
+    ):
+
+        with open(
+            ARQUIVO_USUARIOS,
+            "w",
+            encoding="utf-8"
+        ) as f:
+
+            json.dump(
+                {},
+                f,
+                ensure_ascii=False,
+                indent=4
+            )
+
+    with open(
+        ARQUIVO_USUARIOS,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        return json.load(f)
+
+
+def salvar_usuarios_json(
+    dados
+):
+
+    with open(
+        ARQUIVO_USUARIOS,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        json.dump(
+            dados,
+            f,
+            ensure_ascii=False,
+            indent=4
+        )
 # =========================================================
 # CLEANUP
 # =========================================================
