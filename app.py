@@ -222,7 +222,6 @@ def salvar_memoria(
 
         _trim(session)
         
-dados = carregar_usuarios()
 
 if session_id not in dados:
 
@@ -282,6 +281,7 @@ def salvar_usuarios_json(
             ensure_ascii=False,
             indent=4
         )
+dados = carregar_usuarios()
 # =========================================================
 # CLEANUP
 # =========================================================
