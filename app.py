@@ -8,6 +8,11 @@ import time
 import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from database import (
+    criar_tabelas,
+    salvar_mensagem,
+    carregar_historico
+)
 
 import edge_tts
 import requests
@@ -27,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
+criar_tabelas()
 
 OPENROUTER_API_KEY = os.getenv(
     "OPENROUTER_API_KEY"
@@ -199,6 +205,20 @@ def salvar_memoria(
     pergunta,
     resposta
 ):
+
+    salvar_mensagem(
+        session_id,
+        "user",
+        pergunta,
+        _iso(_now())
+    )
+
+    salvar_mensagem(
+        session_id,
+        "assistant",
+        resposta,
+        _iso(_now())
+    )
 
     with _lock:
 
@@ -418,8 +438,9 @@ ID:
 
         session = _get_or_create(session_id)
 
-        historico = (
-            session["messages"][-4:]
+        historico = carregar_historico(
+            session_id,
+            20
         )
 
     messages_for_api = [
