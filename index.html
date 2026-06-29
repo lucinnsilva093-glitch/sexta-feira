@@ -614,6 +614,35 @@
             texto;
 
             try{
+                const frames = [
+                    
+                    "🧠 Pensando", 
+                    "🧠 Pensando.",
+                    "🧠 Pensando..",
+                    "🧠 Pensando...",
+                    "⚡ Processando",
+                    "⚡ Processando.",
+                    "⚡ Processando..",
+                    "⚡ Processando..."
+];
+
+            let frame = 0;
+
+            let thinkingAnimation =
+                setInterval(()=>{
+
+                    document.getElementById(
+                    "resposta"
+                    ).innerText =
+                    frames[frame];
+
+                    frame++;
+
+           if(frame >= frames.length){
+              frame = 0;
+             }
+
+             },300);
 
                 const res =
                 await fetch(API_URL,{
@@ -632,6 +661,9 @@
                         session_id:session_id
                     })
                 });
+                clearInterval(
+                   thinkingAnimation
+                );
 
                 const data =
                 await res.json();
@@ -670,16 +702,17 @@
                     );
                 }
 
-            } catch(err){
+            catch(err){
 
+                clearInterval(
+                    thinkingAnimation
+                    );
                 console.log(err);
-
                 document.getElementById(
-                "resposta"
-                ).innerText =
-                "Erro ao conectar com a IA.";
+                    "resposta"
+                    ).innerText = 
+                    "Erro ao conectar com a IA.";
             }
-        }
 
         // ================= INPUT =================
 
