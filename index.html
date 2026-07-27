@@ -194,7 +194,59 @@
 
             color:#fff;
         }
+#chatHistorico{
 
+    height:300px;
+
+    overflow-y:auto;
+
+    margin-top:10px;
+
+    padding-right:10px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+}
+
+.msg{
+
+    padding:12px;
+
+    border-radius:15px;
+
+    max-width:90%;
+
+    word-wrap:break-word;
+}
+
+.user{
+
+    background:#005577;
+
+    align-self:flex-end;
+}
+
+.ia{
+
+    background:#111827;
+
+    align-self:flex-start;
+}
+
+#chatHistorico::-webkit-scrollbar{
+
+    width:8px;
+}
+
+#chatHistorico::-webkit-scrollbar-thumb{
+
+    background:#00f7ff;
+
+    border-radius:10px;
+}
         /* ================= INPUT ================= */
 
         .inputArea{
@@ -429,31 +481,21 @@
 
     <!-- CHAT -->
 
-    <div class="chat">
+<div class="chat">
 
-        <div class="chatTitle">
-            VOCÊ:
-        </div>
+    <div class="chatTitle">
+        CONVERSA
+    </div>
 
-        <div class="chatText"
-             id="perguntaTexto">
+    <div id="chatHistorico">
 
-            ...
-
-        </div>
-
-        <div class="chatTitle">
-            SEXTA-FEIRA:
-        </div>
-
-        <div class="chatText"
-             id="resposta">
-
+        <div class="msg ia">
             Sistema pronto.
-
         </div>
 
     </div>
+
+</div>
 
     <!-- INPUT -->
 
@@ -605,13 +647,35 @@
         atualizarHora();
 
         // ================= IA =================
+function adicionarMensagem(texto, classe){
 
+    const chat =
+    document.getElementById(
+    "chatHistorico"
+    );
+
+    const div =
+    document.createElement("div");
+
+    div.className =
+    "msg " + classe;
+
+    div.innerText =
+    texto;
+
+    chat.appendChild(div);
+
+    chat.scrollTop =
+    chat.scrollHeight;
+
+    return div;
+}
         async function enviarTexto(texto){
 
-            document.getElementById(
-            "perguntaTexto"
-            ).innerText =
-            texto;
+           adicionarMensagem(
+           texto,
+           "user"
+           );
 
             try{
                 const frames = [
@@ -631,9 +695,7 @@
             let thinkingAnimation =
                 setInterval(()=>{
 
-                    document.getElementById(
-                    "resposta"
-                    ).innerText =
+                    thinkingMsg.innerText =
                     frames[frame];
 
                     frame++;
@@ -643,6 +705,11 @@
              }
 
              },300);
+                const thinkingMsg =
+                adicionarMensagem(
+                "🧠 Pensando...",
+                "ia"
+                );
 
                 const res =
                 await fetch(API_URL,{
@@ -670,14 +737,16 @@
 
                 console.log(data);
 
+                thinkingMsg.remove();
+
                 const resposta =
                 data.resposta ||
                 "Erro na resposta";
 
-                document.getElementById(
-                "resposta"
-                ).innerText =
-                resposta;
+                adicionarMensagem(
+                resposta,
+                "ia"
+                );
 
                 // ÁUDIO
 
