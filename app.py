@@ -582,12 +582,12 @@ ID:
             audio_id
         )
 
-        asyncio.run(
-            gerar_audio(
-                texto,
-                audio_path
-            )
-        )
+      #  asyncio.run(
+       #     gerar_audio(
+          #      texto,
+             #   audio_path
+           # )
+        #)
 
         logger.info(
             "Resposta enviada com sucesso"
@@ -595,7 +595,7 @@ ID:
 
         return jsonify({
             "resposta": texto,
-            "audio": f"/static/{audio_id}",
+           # "audio": f"/static/{audio_id}",
             "abrir_link": link
         })
 
