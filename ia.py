@@ -48,6 +48,7 @@ class IA:
         })
 
         resposta = requests.post(
+            timeout=60,
             OPENROUTER_URL,
             headers={
                 "Authorization":
@@ -61,7 +62,8 @@ class IA:
                 "messages":mensagens
             }
         )
-
+        if resposta.status_code != 200:
+            raise Exception(resposta.text)
         texto = resposta.json()["choices"][0]["message"]["content"]
 
         self.memoria.salvar(
