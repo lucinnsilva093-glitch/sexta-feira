@@ -48,7 +48,6 @@ class IA:
         })
 
         resposta = requests.post(
-            timeout=60,
             OPENROUTER_URL,
             headers={
                 "Authorization":
@@ -60,7 +59,8 @@ class IA:
             json={
                 "model":MODEL,
                 "messages":mensagens
-            }
+            },
+            timeout=60
         )
         if resposta.status_code != 200:
             raise Exception(resposta.text)
