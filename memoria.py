@@ -8,7 +8,7 @@ class Memoria:
         return carregar_historico(session_id)
 
     def salvar(
-   agora = datetime.now().isoformat()
+        agora = datetime.now().isoformat()
 
    salvar_mensagem(
        session_id,
