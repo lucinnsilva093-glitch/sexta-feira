@@ -6,9 +6,8 @@ class Memoria:
     def buscar_historico(self, session_id):
 
         return carregar_historico(session_id)
-
-    def salvar(
         agora = datetime.now().isoformat()
+    def salvar(
 
    salvar_mensagem(
        session_id,
