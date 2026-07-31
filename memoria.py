@@ -1,6 +1,6 @@
 import re
-from database import *
 from datetime import datetime
+from database import *
 
 class Memoria:
 
@@ -24,18 +24,19 @@ class Memoria:
         return carregar_historico(session_id)
 
     def salvar(self, session_id, pergunta, resposta):
+
         agora = datetime.now().isoformat()
+
+        self.extrair_fatos(
+            session_id,
+            pergunta
+        )
 
         salvar_mensagem(
             session_id,
             "user",
             pergunta,
             agora
-        )
-        
-        self.extrair_fatos(
-        session_id,
-        pergunta
         )
 
         salvar_mensagem(
@@ -44,18 +45,12 @@ class Memoria:
             resposta,
             agora
         )
+
     def buscar_fatos_usuario(
-    self,
-    session_id
-):
-
-    return buscar_fatos(
+        self,
         session_id
-    )
-    texto_memoria = ""
+    ):
 
-    for chave, valor in fatos.items():
-
-        texto_memoria += (
-            f"{chave}: {valor}\n"
-    )
+        return buscar_fatos(
+            session_id
+        )
