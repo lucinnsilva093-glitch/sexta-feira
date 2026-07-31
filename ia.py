@@ -36,7 +36,10 @@ class IA:
         mensagens = [
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT
+                "content":
+                SYSTEM_PROMPT
+                + "\n\nInformações conhecidas:\n"
+                + texto_memoria
             }
         ]
 
