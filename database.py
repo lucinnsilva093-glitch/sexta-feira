@@ -1,4 +1,3 @@
-```python
 import os
 import psycopg2
 
@@ -221,4 +220,3 @@ def limpar_memoria(session_id):
 
     conn.commit()
     conn.close()
-```
