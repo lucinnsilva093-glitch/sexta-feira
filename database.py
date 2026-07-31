@@ -1,10 +1,15 @@
-import sqlite3
+```python
+import os
+import psycopg2
 
-DB_NAME = "sexta_feira.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 def conectar():
-    return sqlite3.connect(DB_NAME)
+
+    return psycopg2.connect(
+        DATABASE_URL
+    )
 
 
 def criar_tabelas():
@@ -14,7 +19,7 @@ def criar_tabelas():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         session_id TEXT UNIQUE,
         nome TEXT,
         plano TEXT DEFAULT 'free'
@@ -22,17 +27,8 @@ def criar_tabelas():
     """)
 
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS memoria_importante (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_id TEXT,
-        chave TEXT,
-        valor TEXT
-    )
-    """)
-
-    cursor.execute("""
     CREATE TABLE IF NOT EXISTS mensagens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         session_id TEXT,
         role TEXT,
         content TEXT,
@@ -40,9 +36,24 @@ def criar_tabelas():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS memoria_importante (
+        id SERIAL PRIMARY KEY,
+        session_id TEXT,
+        chave TEXT,
+        valor TEXT,
+        UNIQUE(session_id, chave)
+    )
+    """)
+
     conn.commit()
     conn.close()
-    
+
+
+# ==================================================
+# MENSAGENS
+# ==================================================
+
 def salvar_mensagem(
     session_id,
     role,
@@ -62,7 +73,7 @@ def salvar_mensagem(
         content,
         timestamp
     )
-    VALUES (?, ?, ?, ?)
+    VALUES (%s, %s, %s, %s)
     """,
     (
         session_id,
@@ -74,7 +85,8 @@ def salvar_mensagem(
 
     conn.commit()
     conn.close()
-    
+
+
 def carregar_historico(
     session_id,
     limite=20
@@ -87,9 +99,9 @@ def carregar_historico(
     """
     SELECT role, content
     FROM mensagens
-    WHERE session_id = ?
+    WHERE session_id = %s
     ORDER BY id DESC
-    LIMIT ?
+    LIMIT %s
     """,
     (
         session_id,
@@ -111,6 +123,11 @@ def carregar_historico(
         for role, content in dados
     ]
 
+
+# ==================================================
+# MEMÓRIA IMPORTANTE
+# ==================================================
+
 def salvar_fato(
     session_id,
     chave,
@@ -122,13 +139,23 @@ def salvar_fato(
 
     cursor.execute(
     """
-    INSERT OR REPLACE INTO memoria_importante
+    INSERT INTO memoria_importante
     (
         session_id,
         chave,
         valor
     )
-    VALUES (?, ?, ?)
+    VALUES (%s, %s, %s)
+
+    ON CONFLICT
+    (
+        session_id,
+        chave
+    )
+
+    DO UPDATE SET
+
+    valor = EXCLUDED.valor
     """,
     (
         session_id,
@@ -140,6 +167,7 @@ def salvar_fato(
     conn.commit()
     conn.close()
 
+
 def buscar_fatos(session_id):
 
     conn = conectar()
@@ -149,9 +177,11 @@ def buscar_fatos(session_id):
     """
     SELECT chave, valor
     FROM memoria_importante
-    WHERE session_id = ?
+    WHERE session_id = %s
     """,
-    (session_id,)
+    (
+        session_id,
+    )
     )
 
     dados = cursor.fetchall()
@@ -162,3 +192,33 @@ def buscar_fatos(session_id):
         chave: valor
         for chave, valor in dados
     }
+
+
+def limpar_memoria(session_id):
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    cursor.execute(
+    """
+    DELETE FROM mensagens
+    WHERE session_id = %s
+    """,
+    (
+        session_id,
+    )
+    )
+
+    cursor.execute(
+    """
+    DELETE FROM memoria_importante
+    WHERE session_id = %s
+    """,
+    (
+        session_id,
+    )
+    )
+
+    conn.commit()
+    conn.close()
+```
