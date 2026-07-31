@@ -30,6 +30,17 @@ class IA:
         self.memoria = memoria
 
     def conversar(self, mensagem, session_id):
+            fatos = self.memoria.buscar_fatos_usuario(
+                session_id
+            )
+        
+        texto_memoria = ""
+
+        for chave, valor in fatos.items():
+
+            texto_memoria += (
+                f"{chave}: {valor}\n"
+        )
 
         historico = self.memoria.buscar_historico(session_id)
 
