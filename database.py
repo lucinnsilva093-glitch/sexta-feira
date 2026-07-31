@@ -22,6 +22,15 @@ def criar_tabelas():
     """)
 
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS memoria_importante (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT,
+        chave TEXT,
+        valor TEXT
+    )
+    """)
+
+    cursor.execute("""
     CREATE TABLE IF NOT EXISTS mensagens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id TEXT,
@@ -101,3 +110,55 @@ def carregar_historico(
         }
         for role, content in dados
     ]
+
+def salvar_fato(
+    session_id,
+    chave,
+    valor
+):
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    cursor.execute(
+    """
+    INSERT OR REPLACE INTO memoria_importante
+    (
+        session_id,
+        chave,
+        valor
+    )
+    VALUES (?, ?, ?)
+    """,
+    (
+        session_id,
+        chave,
+        valor
+    )
+    )
+
+    conn.commit()
+    conn.close()
+
+def buscar_fatos(session_id):
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    cursor.execute(
+    """
+    SELECT chave, valor
+    FROM memoria_importante
+    WHERE session_id = ?
+    """,
+    (session_id,)
+    )
+
+    dados = cursor.fetchall()
+
+    conn.close()
+
+    return {
+        chave: valor
+        for chave, valor in dados
+    }
